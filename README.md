@@ -1,1 +1,1 @@
-WIP - Repo for the Django learning management system I'm building as my capstone project for USIU-A.
+WIP - Repo for the Django learning management system I'm building for my capstone project for USIU-A.
