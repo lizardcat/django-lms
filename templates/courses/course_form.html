@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Course - USIU LMS{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 style="margin-bottom: 1.5rem;">{{ action }} Course</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.title.label }}</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.code.label }}</label>
+            {{ form.code }}
+            <small style="display: block; color: #666; margin-top: 0.25rem;">{{ form.code.help_text }}</small>
+            {% if form.code.errors %}
+                <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.code.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.start_date.label }}</label>
+                {{ form.start_date }}
+                {% if form.start_date.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.start_date.errors }}</div>
+                {% endif %}
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.end_date.label }}</label>
+                {{ form.end_date }}
+                {% if form.end_date.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.end_date.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.max_students.label }}</label>
+                {{ form.max_students }}
+                {% if form.max_students.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.max_students.errors }}</div>
+                {% endif %}
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.status.label }}</label>
+                {{ form.status }}
+                {% if form.status.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.status.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.thumbnail.label }}</label>
+            {{ form.thumbnail }}
+            {% if form.thumbnail.errors %}
+                <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.thumbnail.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit"
+                    style="flex: 1; padding: 0.75rem; background-color: #2ecc71; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;">
+                {{ action }} Course
+            </button>
+            <a href="{% if course %}{% url 'course_detail' course.id %}{% else %}{% url 'course_list' %}{% endif %}"
+               style="flex: 1; text-align: center; padding: 0.75rem; background-color: #95a5a6; color: white; text-decoration: none; border-radius: 4px; font-size: 1rem;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+</style>
+{% endblock %}

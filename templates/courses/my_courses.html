@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}My Courses - USIU LMS{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 2rem;">
+    {% if user_type == 'student' %}
+        My Enrolled Courses
+    {% elif user_type == 'instructor' %}
+        Courses I'm Teaching
+    {% else %}
+        My Courses
+    {% endif %}
+</h2>
+
+{% if user_type == 'student' %}
+    {% if enrollments %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% for enrollment in enrollments %}
+        {% with course=enrollment.course %}
+        <div class="card" style="display: flex; flex-direction: column;">
+            {% if course.thumbnail %}
+            <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}"
+                 style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin: -2rem -2rem 1rem -2rem;">
+            {% else %}
+            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0; margin: -2rem -2rem 1rem -2rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
+                📚
+            </div>
+            {% endif %}
+
+            <h3 style="margin-bottom: 0.5rem;">{{ course.title }}</h3>
+            <p style="color: #7f8c8d; font-size: 0.875rem; margin-bottom: 0.5rem;">{{ course.code }}</p>
+            <p style="color: #555; margin-bottom: 1rem; flex: 1;">
+                {{ course.description|truncatewords:20 }}
+            </p>
+
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 1rem; margin-top: auto;">
+                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.5rem;">
+                    <strong>Instructor:</strong> {{ course.instructor.get_full_name|default:course.instructor.username }}
+                </p>
+                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 1rem;">
+                    <strong>Enrolled:</strong> {{ enrollment.enrolled_at|date:"M d, Y" }}
+                </p>
+                <a href="{% url 'course_detail' course.id %}"
+                   style="display: block; text-align: center; padding: 0.75rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px;">
+                    View Course
+                </a>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <p style="font-size: 1.125rem; color: #7f8c8d; margin-bottom: 1.5rem;">
+            You are not enrolled in any courses yet.
+        </p>
+        <a href="{% url 'course_list' %}"
+           style="display: inline-block; padding: 0.75rem 2rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px;">
+            Browse Courses
+        </a>
+    </div>
+    {% endif %}
+
+{% elif user_type == 'instructor' %}
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'course_create' %}"
+           style="padding: 0.75rem 1.5rem; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+            Create New Course
+        </a>
+    </div>
+
+    {% if courses %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+        {% for course in courses %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="margin-bottom: 0.5rem;">{{ course.title }}</h3>
+                    <p style="color: #7f8c8d; font-size: 0.875rem;">{{ course.code }}</p>
+                </div>
+                <span style="padding: 0.25rem 0.75rem; background-color: {% if course.status == 'PUBLISHED' %}#2ecc71{% elif course.status == 'DRAFT' %}#f39c12{% else %}#95a5a6{% endif %}; color: white; border-radius: 12px; font-size: 0.75rem;">
+                    {{ course.get_status_display }}
+                </span>
+            </div>
+
+            <p style="color: #555; margin-bottom: 1rem;">
+                {{ course.description|truncatewords:15 }}
+            </p>
+
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 1rem; margin-bottom: 1rem;">
+                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.5rem;">
+                    <strong>Enrolled:</strong> {{ course.enrolled_count }} / {{ course.max_students }} students
+                </p>
+                {% if course.start_date %}
+                <p style="font-size: 0.875rem; color: #7f8c8d;">
+                    <strong>Start:</strong> {{ course.start_date|date:"M d, Y" }}
+                </p>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{% url 'course_detail' course.id %}"
+                   style="flex: 1; text-align: center; padding: 0.5rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
+                    View
+                </a>
+                <a href="{% url 'course_edit' course.id %}"
+                   style="flex: 1; text-align: center; padding: 0.5rem; background-color: #f39c12; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
+                    Edit
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <p style="font-size: 1.125rem; color: #7f8c8d;">
+            You haven't created any courses yet.
+        </p>
+    </div>
+    {% endif %}
+
+{% else %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <p style="font-size: 1.125rem; color: #7f8c8d;">
+            Courses functionality is available for students and instructors.
+        </p>
+    </div>
+{% endif %}
+{% endblock %}

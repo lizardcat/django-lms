@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <div class="card">
+        {% if course.thumbnail %}
+        <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}"
+             style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 1.5rem;">
+        {% endif %}
+
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <div>
+                <h1 style="margin-bottom: 0.5rem;">{{ course.title }}</h1>
+                <p style="color: #7f8c8d; font-size: 1.125rem;">{{ course.code }}</p>
+            </div>
+            <span style="padding: 0.5rem 1rem; background-color: #3498db; color: white; border-radius: 12px; font-size: 0.875rem;">
+                {{ course.get_status_display }}
+            </span>
+        </div>
+
+        <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; background-color: #f8f9fa;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Instructor</p>
+                    <p style="font-weight: 500;">{{ course.instructor.get_full_name|default:course.instructor.username }}</p>
+                </div>
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Enrollment</p>
+                    <p style="font-weight: 500;">{{ course.enrolled_count }} / {{ course.max_students }} students</p>
+                </div>
+                {% if course.start_date %}
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Start Date</p>
+                    <p style="font-weight: 500;">{{ course.start_date|date:"M d, Y" }}</p>
+                </div>
+                {% endif %}
+                {% if course.end_date %}
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">End Date</p>
+                    <p style="font-weight: 500;">{{ course.end_date|date:"M d, Y" }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">Description</h3>
+            <p style="color: #555; line-height: 1.8; white-space: pre-line;">{{ course.description }}</p>
+        </div>
+
+        <div style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem; display: flex; gap: 1rem;">
+            {% if user.is_authenticated %}
+                {% if user == course.instructor %}
+                    <a href="{% url 'course_edit' course.id %}"
+                       style="flex: 1; text-align: center; padding: 1rem; background-color: #f39c12; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                        Edit Course
+                    </a>
+                {% elif user.is_student %}
+                    {% if is_enrolled %}
+                        <a href="{% url 'course_unenroll' course.id %}"
+                           onclick="return confirm('Are you sure you want to unenroll from this course?')"
+                           style="flex: 1; text-align: center; padding: 1rem; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                            Unenroll
+                        </a>
+                        <div style="flex: 1; text-align: center; padding: 1rem; background-color: #2ecc71; color: white; border-radius: 4px; font-weight: 500;">
+                            ✓ Enrolled
+                        </div>
+                    {% else %}
+                        {% if course.is_full %}
+                            <div style="flex: 1; text-align: center; padding: 1rem; background-color: #95a5a6; color: white; border-radius: 4px; font-weight: 500;">
+                                Course Full
+                            </div>
+                        {% else %}
+                            <a href="{% url 'course_enroll' course.id %}"
+                               style="flex: 1; text-align: center; padding: 1rem; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                                Enroll Now
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}?next={{ request.path }}"
+                   style="flex: 1; text-align: center; padding: 1rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                    Login to Enroll
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

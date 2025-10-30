@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - USIU LMS{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 2rem auto;">
+    <h2 style="margin-bottom: 1.5rem;">Register</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.username.errors }}</div>
+                {% endif %}
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.first_name.label }}</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.first_name.errors }}</div>
+                {% endif %}
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.last_name.label }}</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.last_name.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.role.label }}</label>
+            {{ form.role }}
+            <small style="display: block; color: #666; margin-top: 0.25rem;">{{ form.role.help_text }}</small>
+            {% if form.role.errors %}
+                <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.role.errors }}</div>
+            {% endif %}
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+                <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.password1.errors }}</div>
+            {% endif %}
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+                <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.password2.errors }}</div>
+            {% endif %}
+        </div>
+        <button type="submit"
+                style="width: 100%; padding: 0.75rem; background-color: #2ecc71; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: background-color 0.3s;">
+            Register
+        </button>
+    </form>
+    <p style="margin-top: 1rem; text-align: center;">
+        Already have an account? <a href="{% url 'login' %}" style="color: #3498db;">Login here</a>
+    </p>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    input:focus,
+    select:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+</style>
+{% endblock %}

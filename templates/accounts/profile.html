@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <h2 style="margin-bottom: 1.5rem;">My Profile</h2>
+
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem; color: #2c3e50;">User Information</h3>
+        <div style="display: grid; grid-template-columns: 150px 1fr; gap: 1rem; margin-bottom: 1rem;">
+            {% if user.profile_picture %}
+            <div>
+                <img src="{{ user.profile_picture.url }}" alt="Profile Picture"
+                     style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
+            </div>
+            {% endif %}
+            <div>
+                <p style="margin-bottom: 0.5rem;"><strong>Username:</strong> {{ user.username }}</p>
+                <p style="margin-bottom: 0.5rem;"><strong>Email:</strong> {{ user.email }}</p>
+                <p style="margin-bottom: 0.5rem;"><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+                <p style="margin-bottom: 0.5rem;"><strong>Role:</strong>
+                    <span style="padding: 0.25rem 0.75rem; background-color: #3498db; color: white; border-radius: 12px; font-size: 0.875rem;">
+                        {{ user.get_role_display }}
+                    </span>
+                </p>
+                {% if user.date_of_birth %}
+                <p style="margin-bottom: 0.5rem;"><strong>Date of Birth:</strong> {{ user.date_of_birth }}</p>
+                {% endif %}
+                <p style="margin-bottom: 0.5rem;"><strong>Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</p>
+            </div>
+        </div>
+        {% if user.bio %}
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;">
+            <strong>Bio:</strong>
+            <p style="margin-top: 0.5rem; color: #555;">{{ user.bio }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; color: #2c3e50;">Edit Profile</h3>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.first_name.label }}</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.last_name.label }}</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.date_of_birth.label }}</label>
+                {{ form.date_of_birth }}
+                {% if form.date_of_birth.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.date_of_birth.errors }}</div>
+                {% endif %}
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.bio.label }}</label>
+                {{ form.bio }}
+                {% if form.bio.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.bio.errors }}</div>
+                {% endif %}
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">{{ form.profile_picture.label }}</label>
+                {{ form.profile_picture }}
+                {% if form.profile_picture.errors %}
+                    <div style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.profile_picture.errors }}</div>
+                {% endif %}
+            </div>
+            <button type="submit"
+                    style="padding: 0.75rem 2rem; background-color: #3498db; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: background-color 0.3s;">
+                Update Profile
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="email"],
+    input[type="date"],
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+    input:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+    button:hover {
+        background-color: #2980b9 !important;
+    }
+</style>
+{% endblock %}
