@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # Local apps
     'djangolms.accounts',
     'djangolms.courses',
+    'djangolms.assignments',
 ]
 
 MIDDLEWARE = [

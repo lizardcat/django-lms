@@ -25,6 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('djangolms.accounts.urls')),
     path('courses/', include('djangolms.courses.urls')),
+    path('assignments/', include('djangolms.assignments.urls')),
 ]
 
 # Serve media files in development
