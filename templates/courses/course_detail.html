@@ -50,7 +50,15 @@
             <p style="color: #555; line-height: 1.8; white-space: pre-line;">{{ course.description }}</p>
         </div>
 
-        <div style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem; display: flex; gap: 1rem;">
+        <div style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem;">
+            {% if user.is_authenticated and (user == course.instructor or is_enrolled) %}
+                <a href="{% url 'assignment_list' course.id %}"
+                   style="display: block; text-align: center; padding: 1rem; background-color: #9b59b6; color: white; text-decoration: none; border-radius: 4px; font-weight: 500; margin-bottom: 1rem;">
+                    View Assignments
+                </a>
+            {% endif %}
+
+            <div style="display: flex; gap: 1rem;">
             {% if user.is_authenticated %}
                 {% if user == course.instructor %}
                     <a href="{% url 'course_edit' course.id %}"
@@ -80,6 +88,7 @@
                         {% endif %}
                     {% endif %}
                 {% endif %}
+            </div>
             {% else %}
                 <a href="{% url 'login' %}?next={{ request.path }}"
                    style="flex: 1; text-align: center; padding: 1rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">

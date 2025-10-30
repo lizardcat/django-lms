@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Grade Submission - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'view_submissions' assignment.id %}" style="color: #3498db; text-decoration: none;">← Back to Submissions</a>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom: 0.5rem;">Grade Submission</h2>
+        <p style="color: #7f8c8d; margin-bottom: 1.5rem;">{{ assignment.title }}</p>
+
+        <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; background-color: #f8f9fa;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Student</p>
+                    <p style="font-weight: 500;">{{ submission.student.get_full_name|default:submission.student.username }}</p>
+                    <p style="font-size: 0.875rem; color: #7f8c8d;">{{ submission.student.email }}</p>
+                </div>
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Submitted</p>
+                    <p style="font-weight: 500;">{{ submission.submitted_at|date:"M d, Y g:i A" }}</p>
+                    {% if submission.is_late %}
+                    <span style="display: inline-block; margin-top: 0.25rem; padding: 0.25rem 0.5rem; background-color: #e74c3c; color: white; border-radius: 8px; font-size: 0.75rem;">
+                        Late Submission
+                    </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Total Points</p>
+                    <p style="font-weight: 500;">{{ assignment.total_points }} points</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 1rem;">Student Submission</h3>
+
+            {% if submission.submission_text %}
+            <div style="margin-bottom: 1.5rem;">
+                <p style="font-weight: 500; margin-bottom: 0.5rem;">Submission Text:</p>
+                <div style="background-color: white; padding: 1rem; border-radius: 4px; border: 1px solid #ddd; white-space: pre-line;">{{ submission.submission_text }}</div>
+            </div>
+            {% endif %}
+
+            {% if submission.attachment %}
+            <div>
+                <p style="font-weight: 500; margin-bottom: 0.5rem;">Attachment:</p>
+                <a href="{{ submission.attachment.url }}" target="_blank"
+                   style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px;">
+                    Download {{ submission.attachment.name|slice:"18:" }}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if submission.graded %}
+        <div style="background-color: #d4edda; padding: 1rem; border-radius: 4px; border-left: 4px solid #2ecc71; margin-bottom: 1.5rem;">
+            <p style="color: #155724;">
+                <strong>Previously Graded:</strong> This submission has already been graded.
+            </p>
+            <p style="color: #155724; margin-top: 0.5rem; font-size: 0.875rem;">
+                Score: {{ submission.score }}/{{ assignment.total_points }} ({{ submission.percentage }}%)
+                <br>
+                Graded by: {{ submission.graded_by.get_full_name|default:submission.graded_by.username }}
+                <br>
+                Graded on: {{ submission.graded_at|date:"M d, Y g:i A" }}
+            </p>
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div style="background-color: #f8d7da; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; color: #721c24;">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <h3 style="margin-bottom: 1rem;">Grading</h3>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="{{ form.score.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                    Score (out of {{ assignment.total_points }}) *
+                </label>
+                {{ form.score }}
+                {% if form.score.errors %}
+                <p style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.score.errors.0 }}</p>
+                {% endif %}
+                <p style="color: #7f8c8d; font-size: 0.875rem; margin-top: 0.25rem;">
+                    Enter a score between 0 and {{ assignment.total_points }}
+                </p>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="{{ form.feedback.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                    Feedback (Optional)
+                </label>
+                {{ form.feedback }}
+                {% if form.feedback.errors %}
+                <p style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.feedback.errors.0 }}</p>
+                {% endif %}
+                <p style="color: #7f8c8d; font-size: 0.875rem; margin-top: 0.25rem;">
+                    Provide constructive feedback to help the student improve
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 1rem; border-top: 1px solid #e0e0e0; padding-top: 1.5rem;">
+                <button type="submit" style="flex: 1; padding: 1rem; background-color: #2ecc71; color: white; border: none; border-radius: 4px; font-weight: 500; cursor: pointer; font-size: 1rem;">
+                    {% if submission.graded %}Update Grade{% else %}Submit Grade{% endif %}
+                </button>
+                <a href="{% url 'view_submissions' assignment.id %}"
+                   style="flex: 1; text-align: center; padding: 1rem; background-color: #95a5a6; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    input[type="number"],
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+
+    input[type="number"]:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    textarea {
+        resize: vertical;
+    }
+</style>
+{% endblock %}

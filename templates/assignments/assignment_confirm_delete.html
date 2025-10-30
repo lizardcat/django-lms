@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Assignment - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'assignment_detail' assignment.id %}" style="color: #3498db; text-decoration: none;">← Back to Assignment</a>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom: 1.5rem; color: #e74c3c;">Delete Assignment</h2>
+
+        <div style="background-color: #fff3cd; padding: 1rem; border-radius: 4px; border-left: 4px solid #ffc107; margin-bottom: 1.5rem;">
+            <p style="color: #856404; font-weight: 500;">Warning: This action cannot be undone!</p>
+        </div>
+
+        <p style="margin-bottom: 1rem; font-size: 1.125rem;">
+            Are you sure you want to delete this assignment?
+        </p>
+
+        <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+            <p style="margin-bottom: 0.5rem;"><strong>Title:</strong> {{ assignment.title }}</p>
+            <p style="margin-bottom: 0.5rem;"><strong>Course:</strong> {{ course.code }} - {{ course.title }}</p>
+            <p style="margin-bottom: 0.5rem;"><strong>Type:</strong> {{ assignment.get_assignment_type_display }}</p>
+            <p style="margin-bottom: 0.5rem;"><strong>Due Date:</strong> {{ assignment.due_date|date:"M d, Y g:i A" }}</p>
+            <p><strong>Submissions:</strong> {{ assignment.submission_count }}</p>
+        </div>
+
+        {% if assignment.submission_count > 0 %}
+        <div style="background-color: #f8d7da; padding: 1rem; border-radius: 4px; border-left: 4px solid #e74c3c; margin-bottom: 1.5rem;">
+            <p style="color: #721c24;">
+                <strong>Important:</strong> This assignment has {{ assignment.submission_count }} submission{{ assignment.submission_count|pluralize }}.
+                Deleting this assignment will also delete all student submissions and grades.
+            </p>
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" style="flex: 1; padding: 1rem; background-color: #e74c3c; color: white; border: none; border-radius: 4px; font-weight: 500; cursor: pointer; font-size: 1rem;">
+                    Yes, Delete Assignment
+                </button>
+                <a href="{% url 'assignment_detail' assignment.id %}"
+                   style="flex: 1; text-align: center; padding: 1rem; background-color: #95a5a6; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

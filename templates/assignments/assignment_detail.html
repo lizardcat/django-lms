@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ assignment.title }} - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'assignment_list' course.id %}" style="color: #3498db; text-decoration: none;">← Back to Assignments</a>
+    </div>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+            <div style="flex: 1;">
+                <h1 style="margin-bottom: 0.5rem;">{{ assignment.title }}</h1>
+                <p style="color: #7f8c8d; font-size: 1.125rem;">{{ course.code }} - {{ course.title }}</p>
+            </div>
+            <span style="padding: 0.5rem 1rem; background-color: {% if assignment.assignment_type == 'HOMEWORK' %}#3498db{% elif assignment.assignment_type == 'QUIZ' %}#9b59b6{% elif assignment.assignment_type == 'PROJECT' %}#e67e22{% elif assignment.assignment_type == 'EXAM' %}#e74c3c{% else %}#1abc9c{% endif %}; color: white; border-radius: 12px; font-size: 0.875rem;">
+                {{ assignment.get_assignment_type_display }}
+            </span>
+        </div>
+
+        <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; background-color: #f8f9fa;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Due Date</p>
+                    <p style="font-weight: 500;">{{ assignment.due_date|date:"M d, Y g:i A" }}</p>
+                    {% if assignment.is_overdue %}
+                    <p style="color: #e74c3c; font-size: 0.875rem; margin-top: 0.25rem;">Overdue</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Total Points</p>
+                    <p style="font-weight: 500;">{{ assignment.total_points }} points</p>
+                </div>
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Late Submission</p>
+                    <p style="font-weight: 500;">{{ assignment.allow_late_submission|yesno:"Allowed,Not Allowed" }}</p>
+                </div>
+                {% if is_instructor %}
+                <div>
+                    <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Submissions</p>
+                    <p style="font-weight: 500;">{{ assignment.submission_count }} submitted</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">Description</h3>
+            <p style="color: #555; line-height: 1.8; white-space: pre-line;">{{ assignment.description }}</p>
+        </div>
+
+        {% if assignment.attachment %}
+        <div style="background-color: #e8f4f8; padding: 1rem; border-radius: 4px; margin-bottom: 2rem;">
+            <p style="font-weight: 500; margin-bottom: 0.5rem;">Attachment:</p>
+            <a href="{{ assignment.attachment.url }}" target="_blank" style="color: #3498db; text-decoration: none;">
+                Download {{ assignment.attachment.name|slice:"17:" }}
+            </a>
+        </div>
+        {% endif %}
+
+        {% if submission %}
+        <div style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem; margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 1rem;">Your Submission</h3>
+
+            <div style="background-color: {% if submission.graded %}#d4edda{% else %}#fff3cd{% endif %}; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                <p style="margin-bottom: 0.5rem;">
+                    <strong>Status:</strong>
+                    {% if submission.graded %}
+                        <span style="color: #155724;">Graded</span>
+                    {% else %}
+                        <span style="color: #856404;">Pending Review</span>
+                    {% endif %}
+                </p>
+                <p style="margin-bottom: 0.5rem;">
+                    <strong>Submitted:</strong> {{ submission.submitted_at|date:"M d, Y g:i A" }}
+                    {% if submission.is_late %}
+                        <span style="color: #e74c3c; font-weight: 500;">(Late)</span>
+                    {% endif %}
+                </p>
+                {% if submission.graded %}
+                <p style="margin-bottom: 0.5rem;">
+                    <strong>Score:</strong> {{ submission.score }}/{{ assignment.total_points }} ({{ submission.percentage }}%)
+                </p>
+                {% endif %}
+            </div>
+
+            {% if submission.submission_text %}
+            <div style="margin-bottom: 1rem;">
+                <p style="font-weight: 500; margin-bottom: 0.5rem;">Submission Text:</p>
+                <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px; white-space: pre-line;">{{ submission.submission_text }}</div>
+            </div>
+            {% endif %}
+
+            {% if submission.attachment %}
+            <div style="margin-bottom: 1rem;">
+                <p style="font-weight: 500; margin-bottom: 0.5rem;">Attachment:</p>
+                <a href="{{ submission.attachment.url }}" target="_blank" style="color: #3498db; text-decoration: none;">
+                    Download {{ submission.attachment.name|slice:"18:" }}
+                </a>
+            </div>
+            {% endif %}
+
+            {% if submission.graded and submission.feedback %}
+            <div style="margin-bottom: 1rem;">
+                <p style="font-weight: 500; margin-bottom: 0.5rem;">Instructor Feedback:</p>
+                <div style="background-color: #e8f4f8; padding: 1rem; border-radius: 4px; white-space: pre-line;">{{ submission.feedback }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                {% if is_instructor %}
+                    <a href="{% url 'view_submissions' assignment.id %}"
+                       style="flex: 1; text-align: center; padding: 1rem; background-color: #9b59b6; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                        View All Submissions ({{ assignment.submission_count }})
+                    </a>
+                    <a href="{% url 'assignment_edit' assignment.id %}"
+                       style="flex: 1; text-align: center; padding: 1rem; background-color: #f39c12; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                        Edit Assignment
+                    </a>
+                    <a href="{% url 'assignment_delete' assignment.id %}"
+                       style="flex: 1; text-align: center; padding: 1rem; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                        Delete
+                    </a>
+                {% elif user.is_student %}
+                    {% if submission %}
+                        <a href="{% url 'submit_assignment' assignment.id %}"
+                           style="flex: 1; text-align: center; padding: 1rem; background-color: #f39c12; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                            Update Submission
+                        </a>
+                    {% elif assignment.is_overdue and not assignment.allow_late_submission %}
+                        <div style="flex: 1; text-align: center; padding: 1rem; background-color: #95a5a6; color: white; border-radius: 4px; font-weight: 500;">
+                            Submissions Closed
+                        </div>
+                    {% else %}
+                        <a href="{% url 'submit_assignment' assignment.id %}"
+                           style="flex: 1; text-align: center; padding: 1rem; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                            Submit Assignment
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
