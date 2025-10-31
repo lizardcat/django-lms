@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Gradebook - {{ course.title }} - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2>Gradebook</h2>
+            <p style="color: #7f8c8d;">{{ course.code }} - {{ course.title }}</p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{% url 'grade_configuration' course.id %}"
+               style="padding: 0.75rem 1.5rem; background-color: #9b59b6; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                Configure Grades
+            </a>
+            <a href="{% url 'recalculate_all_grades' course.id %}"
+               style="padding: 0.75rem 1.5rem; background-color: #f39c12; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                Recalculate All
+            </a>
+            <a href="{% url 'export_grades' course.id %}"
+               style="padding: 0.75rem 1.5rem; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                Export CSV
+            </a>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'course_detail' course.id %}" style="color: #3498db; text-decoration: none;">← Back to Course</a>
+    </div>
+
+    {% if stats.count > 0 %}
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">Class Statistics</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div>
+                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Students</p>
+                <p style="font-size: 1.5rem; font-weight: 600;">{{ stats.count }}</p>
+            </div>
+            <div>
+                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Class Average</p>
+                <p style="font-size: 1.5rem; font-weight: 600; color: #3498db;">{{ stats.average|default:"N/A" }}%</p>
+            </div>
+            <div>
+                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Highest Grade</p>
+                <p style="font-size: 1.5rem; font-weight: 600; color: #2ecc71;">{{ stats.highest|default:"N/A" }}%</p>
+            </div>
+            <div>
+                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.25rem;">Lowest Grade</p>
+                <p style="font-size: 1.5rem; font-weight: 600; color: #e74c3c;">{{ stats.lowest|default:"N/A" }}%</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if categories.exists %}
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">Grade Categories</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            {% for category in categories %}
+            <div style="background-color: #f8f9fa; padding: 0.75rem 1rem; border-radius: 4px; border-left: 3px solid #3498db;">
+                <p style="font-weight: 500; margin-bottom: 0.25rem;">{{ category.name }}</p>
+                <p style="font-size: 0.875rem; color: #7f8c8d;">{{ category.weight }}% of grade</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <h3 style="margin-bottom: 1.5rem;">Student Grades</h3>
+
+        {% if grades_data %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                        <th style="padding: 1rem; text-align: left; font-weight: 600;">Student</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Percentage</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Letter Grade</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Status</th>
+                        <th style="padding: 1rem; text-align: right; font-weight: 600;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in grades_data %}
+                    <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 1rem;">
+                            <p style="font-weight: 500;">{{ data.student.get_full_name|default:data.student.username }}</p>
+                            <p style="font-size: 0.875rem; color: #7f8c8d;">{{ data.student.email }}</p>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            {% if data.grade.get_display_percentage %}
+                            <span style="font-size: 1.125rem; font-weight: 500;">{{ data.grade.get_display_percentage }}%</span>
+                            {% else %}
+                            <span style="color: #95a5a6;">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <span style="padding: 0.5rem 1rem; background-color:
+                            {% if data.grade.get_display_letter == 'A' or data.grade.get_display_letter == 'A+' or data.grade.get_display_letter == 'A-' %}#2ecc71
+                            {% elif data.grade.get_display_letter == 'B' or data.grade.get_display_letter == 'B+' or data.grade.get_display_letter == 'B-' %}#3498db
+                            {% elif data.grade.get_display_letter == 'C' or data.grade.get_display_letter == 'C+' or data.grade.get_display_letter == 'C-' %}#f39c12
+                            {% elif data.grade.get_display_letter == 'D' or data.grade.get_display_letter == 'D+' or data.grade.get_display_letter == 'D-' %}#e67e22
+                            {% elif data.grade.get_display_letter == 'F' %}#e74c3c
+                            {% else %}#95a5a6{% endif %}; color: white; border-radius: 12px; font-weight: 500;">
+                                {{ data.grade.get_display_letter|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            {% if data.grade.is_overridden %}
+                            <span style="padding: 0.25rem 0.75rem; background-color: #f39c12; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                Overridden
+                            </span>
+                            {% else %}
+                            <span style="padding: 0.25rem 0.75rem; background-color: #2ecc71; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                Calculated
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem; text-align: right;">
+                            <a href="{% url 'student_grades' course.id %}?student_id={{ data.student.id }}"
+                               style="display: inline-block; padding: 0.5rem 1rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem; margin-right: 0.5rem;">
+                                View Details
+                            </a>
+                            <a href="{% url 'override_grade' data.enrollment.id %}"
+                               style="display: inline-block; padding: 0.5rem 1rem; background-color: #9b59b6; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
+                                Override
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem;">
+            <p style="font-size: 1.125rem; color: #7f8c8d;">No students enrolled yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

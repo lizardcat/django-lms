@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}My Grades - {{ course.title }} - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'course_detail' course.id %}" style="color: #3498db; text-decoration: none;">← Back to Course</a>
+    </div>
+
+    <div class="card" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+            <div>
+                <h2 style="margin-bottom: 0.5rem;">{% if is_instructor %}{{ student.get_full_name|default:student.username }}'s Grades{% else %}My Grades{% endif %}</h2>
+                <p style="color: #7f8c8d;">{{ course.code }} - {{ course.title }}</p>
+            </div>
+            <div style="text-align: right;">
+                <p style="font-size: 2.5rem; font-weight: 600; color: #3498db; margin-bottom: 0.25rem;">
+                    {{ grade.get_display_letter|default:"N/A" }}
+                </p>
+                <p style="font-size: 1.125rem; color: #7f8c8d;">
+                    {% if grade.get_display_percentage %}{{ grade.get_display_percentage }}%{% else %}No grades yet{% endif %}
+                </p>
+                {% if grade.is_overridden %}
+                <p style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; background-color: #f39c12; color: white; border-radius: 12px; font-size: 0.75rem; display: inline-block;">
+                    Overridden by Instructor
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if category_stats %}
+        <div style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem;">
+            <h3 style="margin-bottom: 1rem;">Category Breakdown</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                {% for stat in category_stats %}
+                <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px; border-left: 3px solid #3498db;">
+                    <p style="font-weight: 500; margin-bottom: 0.25rem;">{{ stat.category.name }}</p>
+                    <p style="font-size: 1.25rem; font-weight: 600; color: #3498db; margin-bottom: 0.25rem;">
+                        {{ stat.average }}%
+                    </p>
+                    <p style="font-size: 0.875rem; color: #7f8c8d;">
+                        {{ stat.count }} assignment{{ stat.count|pluralize }} • Weight: {{ stat.category.weight }}%
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1.5rem;">Assignment Grades</h3>
+
+        {% if assignments_data %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                        <th style="padding: 1rem; text-align: left; font-weight: 600;">Assignment</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Type</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Due Date</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Score</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: 600;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in assignments_data %}
+                    <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 1rem;">
+                            <a href="{% url 'assignment_detail' data.assignment.id %}" style="color: #3498db; text-decoration: none; font-weight: 500;">
+                                {{ data.assignment.title }}
+                            </a>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <span style="padding: 0.25rem 0.75rem; background-color: {% if data.assignment.assignment_type == 'HOMEWORK' %}#3498db{% elif data.assignment.assignment_type == 'QUIZ' %}#9b59b6{% elif data.assignment.assignment_type == 'PROJECT' %}#e67e22{% elif data.assignment.assignment_type == 'EXAM' %}#e74c3c{% else %}#1abc9c{% endif %}; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                {{ data.assignment.get_assignment_type_display }}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <p>{{ data.assignment.due_date|date:"M d, Y" }}</p>
+                            <p style="font-size: 0.875rem; color: #7f8c8d;">{{ data.assignment.due_date|date:"g:i A" }}</p>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            {% if data.submission and data.submission.graded %}
+                                <p style="font-size: 1.125rem; font-weight: 600;">
+                                    {{ data.submission.score }}/{{ data.assignment.total_points }}
+                                </p>
+                                <p style="font-size: 0.875rem; color: #7f8c8d;">
+                                    {{ data.percentage }}%
+                                </p>
+                            {% elif data.submission %}
+                                <span style="color: #f39c12; font-weight: 500;">Pending</span>
+                            {% else %}
+                                <span style="color: #95a5a6;">Not Submitted</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            {% if data.submission and data.submission.graded %}
+                                <span style="padding: 0.25rem 0.75rem; background-color: #2ecc71; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                    Graded
+                                </span>
+                                {% if data.submission.is_late %}
+                                <br>
+                                <span style="padding: 0.25rem 0.75rem; background-color: #e74c3c; color: white; border-radius: 12px; font-size: 0.75rem; margin-top: 0.25rem; display: inline-block;">
+                                    Late
+                                </span>
+                                {% endif %}
+                            {% elif data.submission %}
+                                <span style="padding: 0.25rem 0.75rem; background-color: #f39c12; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                    Submitted
+                                </span>
+                            {% elif data.assignment.is_overdue %}
+                                <span style="padding: 0.25rem 0.75rem; background-color: #e74c3c; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                    Overdue
+                                </span>
+                            {% else %}
+                                <span style="padding: 0.25rem 0.75rem; background-color: #3498db; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                    Pending
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem;">
+            <p style="font-size: 1.125rem; color: #7f8c8d;">No assignments in this course yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if grade.is_overridden and grade.override_reason %}
+    <div class="card" style="margin-top: 2rem; background-color: #fff3cd; border-left: 4px solid #f39c12;">
+        <h3 style="color: #856404; margin-bottom: 0.5rem;">Grade Override Note</h3>
+        <p style="color: #856404;">{{ grade.override_reason }}</p>
+        {% if grade.overridden_by %}
+        <p style="font-size: 0.875rem; color: #856404; margin-top: 0.5rem;">
+            Overridden by: {{ grade.overridden_by.get_full_name|default:grade.overridden_by.username }} on {{ grade.overridden_at|date:"M d, Y" }}
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
