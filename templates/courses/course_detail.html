@@ -51,24 +51,26 @@
         </div>
 
         <div style="border-top: 1px solid #e0e0e0; padding-top: 1.5rem;">
-            {% if user.is_authenticated and (user == course.instructor or is_enrolled) %}
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
-                    <a href="{% url 'assignment_list' course.id %}"
-                       style="text-align: center; padding: 1rem; background-color: #9b59b6; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
-                        View Assignments
-                    </a>
-                    {% if user == course.instructor %}
-                    <a href="{% url 'course_gradebook' course.id %}"
-                       style="text-align: center; padding: 1rem; background-color: #e67e22; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
-                        View Gradebook
-                    </a>
-                    {% else %}
-                    <a href="{% url 'student_grades' course.id %}"
-                       style="text-align: center; padding: 1rem; background-color: #e67e22; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
-                        View My Grades
-                    </a>
-                    {% endif %}
-                </div>
+            {% if user.is_authenticated %}
+                {% if user == course.instructor or is_enrolled %}
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                        <a href="{% url 'assignment_list' course.id %}"
+                           style="text-align: center; padding: 1rem; background-color: #9b59b6; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                            View Assignments
+                        </a>
+                        {% if user == course.instructor %}
+                        <a href="{% url 'course_gradebook' course.id %}"
+                           style="text-align: center; padding: 1rem; background-color: #e67e22; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                            View Gradebook
+                        </a>
+                        {% else %}
+                        <a href="{% url 'student_grades' course.id %}"
+                           style="text-align: center; padding: 1rem; background-color: #e67e22; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                            View My Grades
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
             {% endif %}
 
             <div style="display: flex; gap: 1rem;">
