@@ -2,7 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.urls import reverse
 from djangolms.courses.models import Course, Enrollment
+from djangolms.notifications.models import Notification
 from .models import Assignment, Submission
 from .forms import AssignmentForm, SubmissionForm, GradeSubmissionForm
 
@@ -83,6 +85,24 @@ def assignment_create(request, course_id):
             assignment = form.save(commit=False)
             assignment.course = course
             assignment.save()
+
+            # Create notifications for all enrolled students
+            enrollments = Enrollment.objects.filter(course=course, status='ENROLLED').select_related('student')
+            notifications = []
+            for enrollment in enrollments:
+                notification = Notification(
+                    recipient=enrollment.student,
+                    notification_type='ASSIGNMENT',
+                    title=f'New assignment in {course.code}',
+                    message=f'{assignment.title} is now available. Due: {assignment.due_date.strftime("%b %d, %Y %H:%M")}',
+                    related_course=course,
+                    action_url=reverse('assignment_detail', args=[assignment.id])
+                )
+                notifications.append(notification)
+
+            if notifications:
+                Notification.objects.bulk_create(notifications)
+
             messages.success(request, f'Assignment "{assignment.title}" created successfully!')
             return redirect('assignment_detail', assignment_id=assignment.id)
     else:
@@ -179,6 +199,18 @@ def submit_assignment(request, assignment_id):
             submission.student = request.user
             submission.save()
 
+            # Create notification for instructor
+            is_resubmission = existing_submission is not None
+            action_type = "resubmitted" if is_resubmission else "submitted"
+            Notification.objects.create(
+                recipient=course.instructor,
+                notification_type='SUBMISSION',
+                title=f'Assignment {action_type} in {course.code}',
+                message=f'{request.user.get_full_name() or request.user.username} {action_type} "{assignment.title}"',
+                related_course=course,
+                action_url=reverse('view_submissions', args=[assignment.id])
+            )
+
             if existing_submission:
                 messages.success(request, 'Your submission has been updated!')
             else:
@@ -239,6 +271,17 @@ def grade_submission(request, submission_id):
             graded_submission.graded_by = request.user
             graded_submission.graded_at = timezone.now()
             graded_submission.save()
+
+            # Create notification for student
+            Notification.objects.create(
+                recipient=submission.student,
+                notification_type='GRADE',
+                title=f'Assignment graded in {course.code}',
+                message=f'Your submission for "{assignment.title}" has been graded. Score: {graded_submission.score}/{assignment.total_points}',
+                related_course=course,
+                action_url=reverse('assignment_detail', args=[assignment.id])
+            )
+
             messages.success(request, f'Submission by {submission.student.username} has been graded.')
             return redirect('view_submissions', assignment_id=assignment.id)
     else:
