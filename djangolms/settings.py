@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'djangolms.courses',
     'djangolms.assignments',
     'djangolms.grades',
+    'djangolms.notifications',
 ]
 
 MIDDLEWARE = [
