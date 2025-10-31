@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ announcement.title }} - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'course_announcements' course.id %}" style="color: #3498db; text-decoration: none;">&larr; Back to Announcements</a>
+    </div>
+
+    <div class="card">
+        <div style="border-left: 4px solid {{ announcement.get_priority_color }}; padding-left: 1rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                {% if announcement.pinned %}
+                <span style="font-size: 1.5rem; color: #e74c3c;">&#128204;</span>
+                {% endif %}
+                <h1 style="margin: 0;">{{ announcement.title }}</h1>
+            </div>
+
+            <div style="display: flex; gap: 1.5rem; font-size: 0.875rem; color: #7f8c8d; margin-top: 0.75rem;">
+                <span>By: {{ announcement.author.get_full_name|default:announcement.author.username }}</span>
+                <span>Date: {{ announcement.created_at|date:"M d, Y H:i" }}</span>
+                <span style="background-color: {{ announcement.get_priority_color }}; color: white; padding: 3px 10px; border-radius: 3px;">
+                    {{ announcement.get_priority_display }}
+                </span>
+            </div>
+        </div>
+
+        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+            <p style="color: #2c3e50; white-space: pre-line; line-height: 1.8; margin: 0;">{{ announcement.content }}</p>
+        </div>
+
+        {% if announcement.updated_at > announcement.created_at %}
+        <div style="font-size: 0.875rem; color: #7f8c8d; font-style: italic; margin-bottom: 1.5rem;">
+            Last updated: {{ announcement.updated_at|date:"M d, Y H:i" }}
+        </div>
+        {% endif %}
+
+        {% if is_instructor %}
+        <div style="display: flex; gap: 1rem; border-top: 1px solid #e0e0e0; padding-top: 1.5rem;">
+            <a href="{% url 'edit_announcement' announcement.id %}"
+               style="flex: 1; text-align: center; padding: 1rem; background-color: #f39c12; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                Edit Announcement
+            </a>
+            <a href="{% url 'delete_announcement' announcement.id %}"
+               style="flex: 1; text-align: center; padding: 1rem; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+                Delete Announcement
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
