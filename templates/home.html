@@ -1,8 +1,183 @@
 {% extends 'base.html' %}
 
-{% block title %}Home - USIU LMS{% endblock %}
+{% block title %}Dashboard - USIU LMS{% endblock %}
 
 {% block content %}
+{% if user.is_authenticated %}
+<!-- Blackboard-style Dashboard -->
+<div style="max-width: 1400px; margin: 0 auto;">
+    <!-- Welcome Header -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 style="margin-bottom: 0.5rem; font-size: 2rem;">Welcome back, {{ user.first_name|default:user.username }}!</h1>
+        <p style="opacity: 0.9; font-size: 1.1rem;">{{ user.get_role_display }} Dashboard</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem;">
+        <!-- Main Content Area -->
+        <div>
+            <!-- My Courses Section -->
+            <div style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="color: #2c3e50; font-size: 1.5rem; margin: 0;">My Courses</h2>
+                    <a href="{% url 'course_list' %}" style="color: #667eea; text-decoration: none; font-weight: 500;">View All Courses &rarr;</a>
+                </div>
+
+                {% if my_courses %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+                    {% for course in my_courses %}
+                    <a href="{% url 'course_detail' course.id %}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;">
+                        <div class="card" style="padding: 0; overflow: hidden; height: 100%; border: 2px solid transparent; transition: all 0.3s;">
+                            <!-- Course Thumbnail -->
+                            <div style="height: 140px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative; overflow: hidden;">
+                                {% if course.thumbnail %}
+                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                {% else %}
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; font-size: 3rem;">
+                                    📚
+                                </div>
+                                {% endif %}
+                                <div style="position: absolute; top: 10px; right: 10px; background-color: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                    {{ course.code }}
+                                </div>
+                            </div>
+
+                            <!-- Course Info -->
+                            <div style="padding: 1.25rem;">
+                                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #2c3e50; font-weight: 600;">{{ course.title }}</h3>
+                                <p style="margin: 0 0 0.75rem 0; color: #7f8c8d; font-size: 0.875rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    {{ course.description|truncatewords:15 }}
+                                </p>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #95a5a6;">
+                                    <span>👤</span>
+                                    <span>{{ course.instructor.get_full_name|default:course.instructor.username }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="card" style="padding: 3rem; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📚</div>
+                    <h3 style="color: #7f8c8d; margin-bottom: 1rem;">No courses yet</h3>
+                    <p style="color: #95a5a6; margin-bottom: 1.5rem;">Browse available courses to get started</p>
+                    <a href="{% url 'course_list' %}" style="display: inline-block; padding: 0.75rem 2rem; background-color: #667eea; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">
+                        Browse Courses
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if user.is_student and upcoming_assignments %}
+            <!-- Upcoming Assignments -->
+            <div style="margin-bottom: 2rem;">
+                <h2 style="color: #2c3e50; font-size: 1.5rem; margin-bottom: 1.5rem;">Upcoming Assignments</h2>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    {% for assignment in upcoming_assignments %}
+                    <div style="padding: 1.25rem; border-bottom: 1px solid #e0e0e0; {% if forloop.last %}border-bottom: none;{% endif %} transition: background-color 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <a href="{% url 'assignment_detail' assignment.id %}" style="color: #2c3e50; text-decoration: none; font-weight: 600; font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">
+                                    {{ assignment.title }}
+                                </a>
+                                <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.875rem; color: #7f8c8d;">
+                                    <span>{{ assignment.course.code }}</span>
+                                    <span>{{ assignment.total_points }} points</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.875rem; color: #e74c3c; font-weight: 600; margin-bottom: 0.25rem;">
+                                    Due {{ assignment.due_date|date:"M d, Y" }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #95a5a6;">
+                                    {{ assignment.due_date|date:"h:i A" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Sidebar -->
+        <div>
+            <!-- To Do / Notifications -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #f0f0f0;">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #2c3e50;">Activity Stream</h3>
+                    {% if unread_count > 0 %}
+                    <span style="background-color: #e74c3c; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">
+                        {{ unread_count }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if recent_notifications %}
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for notification in recent_notifications %}
+                    <div style="padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0; {% if forloop.last %}border-bottom: none;{% endif %}">
+                        <div style="display: flex; gap: 0.75rem;">
+                            <div style="font-size: 1.25rem; flex-shrink: 0;">{{ notification.get_icon }}</div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; font-size: 0.875rem; color: #2c3e50; margin-bottom: 0.25rem; {% if not notification.is_read %}color: #667eea;{% endif %}">
+                                    {{ notification.title }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #7f8c8d; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                    {{ notification.message }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: #95a5a6; margin-top: 0.25rem;">
+                                    {{ notification.created_at|timesince }} ago
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'notification_list' %}" style="display: block; text-align: center; padding: 0.75rem; background-color: #f8f9fa; color: #667eea; text-decoration: none; font-weight: 500; font-size: 0.875rem; margin-top: 0.75rem; border-radius: 4px;">
+                    View All Notifications
+                </a>
+                {% else %}
+                <div style="text-align: center; padding: 2rem 1rem; color: #95a5a6;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔔</div>
+                    <p style="font-size: 0.875rem;">No recent activity</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card">
+                <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem; color: #2c3e50; padding-bottom: 1rem; border-bottom: 2px solid #f0f0f0;">Quick Links</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <a href="{% url 'my_courses' %}" style="padding: 0.75rem; background-color: #f8f9fa; border-radius: 6px; text-decoration: none; color: #2c3e50; font-weight: 500; transition: background-color 0.2s; display: block;">
+                        📚 My Courses
+                    </a>
+                    <a href="{% url 'course_list' %}" style="padding: 0.75rem; background-color: #f8f9fa; border-radius: 6px; text-decoration: none; color: #2c3e50; font-weight: 500; transition: background-color 0.2s; display: block;">
+                        🔍 Browse Courses
+                    </a>
+                    <a href="{% url 'profile' %}" style="padding: 0.75rem; background-color: #f8f9fa; border-radius: 6px; text-decoration: none; color: #2c3e50; font-weight: 500; transition: background-color 0.2s; display: block;">
+                        👤 My Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card:hover {
+        transform: translateY(-2px);
+        border-color: #667eea !important;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
+    }
+    a[href*="course_detail"] .card:hover {
+        cursor: pointer;
+    }
+</style>
+
+{% else %}
+<!-- Logged Out View -->
 <div style="text-align: center; max-width: 900px; margin: 0 auto;">
     <div class="card" style="padding: 3rem;">
         <h1 style="font-size: 2.5rem; color: #2c3e50; margin-bottom: 1rem;">
@@ -12,34 +187,21 @@
             Your gateway to online learning and course management
         </p>
 
-        {% if user.is_authenticated %}
-            <div style="background-color: #ecf0f1; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
-                <h2 style="color: #2c3e50; margin-bottom: 1rem;">Welcome back, {{ user.first_name|default:user.username }}!</h2>
-                <p style="color: #555; margin-bottom: 1.5rem;">
-                    You are logged in as a <strong>{{ user.get_role_display }}</strong>
-                </p>
-                <a href="{% url 'profile' %}"
-                   style="display: inline-block; padding: 0.75rem 2rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-weight: 500; transition: background-color 0.3s;">
-                    Go to My Profile
-                </a>
-            </div>
-        {% else %}
-            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
-                <a href="{% url 'login' %}"
-                   style="display: inline-block; padding: 1rem 2.5rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-size: 1.125rem; font-weight: 500; transition: background-color 0.3s;">
-                    Login
-                </a>
-                <a href="{% url 'register' %}"
-                   style="display: inline-block; padding: 1rem 2.5rem; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-size: 1.125rem; font-weight: 500; transition: background-color 0.3s;">
-                    Register
-                </a>
-            </div>
-        {% endif %}
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+            <a href="{% url 'login' %}"
+               style="display: inline-block; padding: 1rem 2.5rem; background-color: #667eea; color: white; text-decoration: none; border-radius: 6px; font-size: 1.125rem; font-weight: 500; transition: background-color 0.3s;">
+                Login
+            </a>
+            <a href="{% url 'register' %}"
+               style="display: inline-block; padding: 1rem 2.5rem; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 6px; font-size: 1.125rem; font-weight: 500; transition: background-color 0.3s;">
+                Register
+            </a>
+        </div>
     </div>
 
     <div style="margin-top: 3rem;">
         <h2 style="color: #2c3e50; margin-bottom: 1.5rem; text-align: center; font-size: 1.75rem;">
-            Proposed Core Features
+            Core Features
         </h2>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; max-width: 700px; margin: 0 auto;">
             <div class="card" style="padding: 1.5rem; text-align: center;">
@@ -48,19 +210,19 @@
                 <p style="color: #7f8c8d; font-size: 0.95rem;">Access and manage your courses</p>
             </div>
             <div class="card" style="padding: 1.5rem; text-align: center;">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📹</div>
-                <h3 style="color: #2c3e50; margin-bottom: 0.5rem;">Live Streaming</h3>
-                <p style="color: #7f8c8d; font-size: 0.95rem;">Join live lectures and sessions</p>
-            </div>
-            <div class="card" style="padding: 1.5rem; text-align: center;">
                 <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📝</div>
-                <h3 style="color: #2c3e50; margin-bottom: 0.5rem;">Assignments</h3>
-                <p style="color: #7f8c8d; font-size: 0.95rem;">Submit and track your work</p>
+                <h3 style="color: #2c3e50; margin-bottom: 0.5rem;">Assignments & Grades</h3>
+                <p style="color: #7f8c8d; font-size: 0.95rem;">Submit work and track progress</p>
             </div>
             <div class="card" style="padding: 1.5rem; text-align: center;">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💬</div>
-                <h3 style="color: #2c3e50; margin-bottom: 0.5rem;">Real-time Chat</h3>
-                <p style="color: #7f8c8d; font-size: 0.95rem;">Communicate with peers and instructors</p>
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔔</div>
+                <h3 style="color: #2c3e50; margin-bottom: 0.5rem;">Notifications</h3>
+                <p style="color: #7f8c8d; font-size: 0.95rem;">Stay updated on course activity</p>
+            </div>
+            <div class="card" style="padding: 1.5rem; text-align: center;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📢</div>
+                <h3 style="color: #2c3e50; margin-bottom: 0.5rem;">Announcements</h3>
+                <p style="color: #7f8c8d; font-size: 0.95rem;">Important course updates</p>
             </div>
         </div>
     </div>
@@ -71,4 +233,5 @@
         opacity: 0.9;
     }
 </style>
+{% endif %}
 {% endblock %}
