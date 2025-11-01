@@ -14,8 +14,95 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
-            background-color: #f8f9fa;
+            background-color: #f5f6f8;
+            {% if user.is_authenticated %}
+            display: flex;
+            min-height: 100vh;
+            {% endif %}
         }
+
+        /* Dark Sidebar Navigation */
+        .sidebar {
+            width: 230px;
+            background-color: #2d2d2d;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+        .sidebar-logo {
+            padding: 2rem 1.5rem;
+            background-color: #1a1a1a;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #404040;
+        }
+        .sidebar-user {
+            padding: 1.5rem 1.5rem;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .sidebar-user-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #4a4a4a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: #b8b8b8;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+        .sidebar-nav a:hover {
+            background-color: #3a3a3a;
+            color: white;
+        }
+        .sidebar-nav a.active {
+            background-color: #1a1a1a;
+            border-left-color: #0073e6;
+            color: white;
+        }
+        .sidebar-nav-icon {
+            width: 24px;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+        .sidebar-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #404040;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            {% if user.is_authenticated %}
+            margin-left: 230px;
+            {% endif %}
+            flex: 1;
+            min-height: 100vh;
+        }
+
+        /* Top Navbar (for logged out users) */
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -43,10 +130,11 @@
         .navbar nav a:hover {
             background-color: rgba(255, 255, 255, 0.2);
         }
+
         .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
         }
         .messages {
             list-style: none;
@@ -76,7 +164,7 @@
             background: white;
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .notification-badge {
             position: relative;
@@ -98,40 +186,97 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    {% if user.is_authenticated %}
+    <!-- Dark Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            USIU<br>AFRICA
+        </div>
+
+        <div class="sidebar-user">
+            <div class="sidebar-user-icon">
+                👤
+            </div>
+            <div>
+                <div style="font-weight: 500;">{{ user.get_full_name|default:user.username }}</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'notification_list' %}" {% if request.resolver_match.url_name == 'notification_list' %}class="active"{% endif %}>
+                <span class="sidebar-nav-icon">🌐</span>
+                <span class="notification-badge">
+                    Activity
+                    {% unread_notification_count user as unread_count %}
+                    {% if unread_count > 0 %}
+                    <span class="badge">{{ unread_count }}</span>
+                    {% endif %}
+                </span>
+            </a>
+
+            <a href="{% url 'my_courses' %}" {% if request.resolver_match.url_name == 'my_courses' or request.resolver_match.url_name == 'home' %}class="active"{% endif %}>
+                <span class="sidebar-nav-icon">📚</span>
+                <span>Courses</span>
+            </a>
+
+            <a href="#" onclick="alert('Calendar feature coming soon!'); return false;">
+                <span class="sidebar-nav-icon">📅</span>
+                <span>Calendar</span>
+            </a>
+
+            <a href="#" onclick="alert('Messages feature coming soon!'); return false;">
+                <span class="sidebar-nav-icon">✉️</span>
+                <span>Messages</span>
+            </a>
+
+            {% if user.is_student %}
+            <a href="#" onclick="alert('View grades within each course'); return false;">
+                <span class="sidebar-nav-icon">📊</span>
+                <span>Grades</span>
+            </a>
+            {% endif %}
+
+            {% if user.is_instructor %}
+            <a href="#" onclick="alert('Instructor tools coming soon!'); return false;">
+                <span class="sidebar-nav-icon">🔧</span>
+                <span>Tools</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; color: #b8b8b8; text-decoration: none; transition: color 0.2s;">
+                <span class="sidebar-nav-icon">🚪</span>
+                <span>Sign Out</span>
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <!-- Top Navbar for Logged Out Users -->
     <div class="navbar">
         <div class="navbar-content">
             <h1><a href="{% url 'home' %}" style="color: white; text-decoration: none;">USIU LMS</a></h1>
             <nav>
                 <a href="{% url 'course_list' %}">Courses</a>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'my_courses' %}">My Courses</a>
-                    <a href="{% url 'notification_list' %}" class="notification-badge">
-                        Notifications
-                        {% unread_notification_count user as unread_count %}
-                        {% if unread_count > 0 %}
-                        <span class="badge">{{ unread_count }}</span>
-                        {% endif %}
-                    </a>
-                    <a href="{% url 'profile' %}">Profile</a>
-                    <a href="{% url 'logout' %}">Logout</a>
-                {% else %}
-                    <a href="{% url 'login' %}">Login</a>
-                    <a href="{% url 'register' %}">Register</a>
-                {% endif %}
+                <a href="{% url 'login' %}">Login</a>
+                <a href="{% url 'register' %}">Register</a>
             </nav>
         </div>
     </div>
+    {% endif %}
 
-    <div class="container">
-        {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li class="message {{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+    <div class="main-content">
+        <div class="container">
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li class="message {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
 
-        {% block content %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
     </div>
 
     {% block extra_js %}{% endblock %}

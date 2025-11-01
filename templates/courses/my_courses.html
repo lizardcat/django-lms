@@ -1,63 +1,108 @@
 {% extends 'base.html' %}
 
-{% block title %}My Courses - USIU LMS{% endblock %}
+{% block title %}Courses - USIU LMS{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 2rem;">
-    {% if user_type == 'student' %}
-        My Enrolled Courses
-    {% elif user_type == 'instructor' %}
-        Courses I'm Teaching
-    {% else %}
-        My Courses
-    {% endif %}
-</h2>
+<!-- Top Header with Course Catalog Button -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; color: #2c3e50; margin: 0;">Courses</h1>
+    <a href="{% url 'course_list' %}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background-color: white; color: #2c3e50; text-decoration: none; border: 1px solid #d0d0d0; border-radius: 4px; font-weight: 500; transition: background-color 0.2s;">
+        <span style="font-size: 1.2rem;">📖</span>
+        <span>Course Catalog</span>
+    </a>
+</div>
 
+<!-- Search and Filters -->
+<div style="background-color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: center;">
+        <!-- View Toggle -->
+        <div style="display: flex; gap: 0.5rem;">
+            <button style="padding: 0.5rem; background-color: #f0f0f0; border: 1px solid #d0d0d0; border-radius: 4px; cursor: pointer;">
+                <span style="font-size: 1.2rem;">☰</span>
+            </button>
+            <button style="padding: 0.5rem; background-color: white; border: 1px solid #d0d0d0; border-radius: 4px; cursor: pointer;">
+                <span style="font-size: 1.2rem;">⊞</span>
+            </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="flex: 1; position: relative;">
+            <input type="text" placeholder="Search your courses" style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 1rem;">
+            <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 1.2rem;">🔍</span>
+        </div>
+
+        <!-- Filters -->
+        <select style="padding: 0.75rem 2.5rem 0.75rem 1rem; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 0.95rem; background-color: white; cursor: pointer;">
+            <option>All courses</option>
+            <option>Enrolled</option>
+            <option>Archived</option>
+        </select>
+    </div>
+</div>
+
+<!-- Results Count -->
+{% if user_type == 'student' %}
+    <div style="margin-bottom: 1.5rem; color: #555; font-size: 0.95rem;">
+        {{ enrollments|length }} result{{ enrollments|length|pluralize }}
+    </div>
+{% elif user_type == 'instructor' %}
+    <div style="margin-bottom: 1.5rem; color: #555; font-size: 0.95rem;">
+        {{ courses|length }} result{{ courses|length|pluralize }}
+    </div>
+{% endif %}
+
+<!-- Course List -->
 {% if user_type == 'student' %}
     {% if enrollments %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
-        {% for enrollment in enrollments %}
-        {% with course=enrollment.course %}
-        <div class="card" style="display: flex; flex-direction: column;">
-            {% if course.thumbnail %}
-            <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}"
-                 style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin: -2rem -2rem 1rem -2rem;">
-            {% else %}
-            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0; margin: -2rem -2rem 1rem -2rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
-                📚
-            </div>
-            {% endif %}
+        {% regroup enrollments by course.start_date.year as year_list %}
+        {% for year in year_list %}
+            <div style="margin-bottom: 3rem;">
+                <h2 style="font-size: 1.25rem; color: #2c3e50; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e0e0e0;">
+                    {% if year.grouper %}{{ year.grouper }}{% else %}Current Courses{% endif %}
+                </h2>
 
-            <h3 style="margin-bottom: 0.5rem;">{{ course.title }}</h3>
-            <p style="color: #7f8c8d; font-size: 0.875rem; margin-bottom: 0.5rem;">{{ course.code }}</p>
-            <p style="color: #555; margin-bottom: 1rem; flex: 1;">
-                {{ course.description|truncatewords:20 }}
-            </p>
-
-            <div style="border-top: 1px solid #e0e0e0; padding-top: 1rem; margin-top: auto;">
-                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.5rem;">
-                    <strong>Instructor:</strong> {{ course.instructor.get_full_name|default:course.instructor.username }}
-                </p>
-                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 1rem;">
-                    <strong>Enrolled:</strong> {{ enrollment.enrolled_at|date:"M d, Y" }}
-                </p>
-                <a href="{% url 'course_detail' course.id %}"
-                   style="display: block; text-align: center; padding: 0.75rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px;">
-                    View Course
-                </a>
+                {% for enrollment in year.list %}
+                {% with course=enrollment.course %}
+                <div style="background-color: white; border-left: 4px solid #0073e6; margin-bottom: 1rem; padding: 1.5rem 2rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: box-shadow 0.2s;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="margin-bottom: 0.5rem;">
+                                <span style="font-weight: 600; color: #555; font-size: 0.95rem;">{{ course.code }}</span>
+                            </div>
+                            <h3 style="font-size: 1.1rem; color: #2c3e50; margin-bottom: 0.75rem;">
+                                <a href="{% url 'course_detail' course.id %}" style="color: #2c3e50; text-decoration: none;">
+                                    {{ course.code }} {{ course.title }}
+                                </a>
+                            </h3>
+                            <div style="display: flex; gap: 1.5rem; font-size: 0.9rem; color: #666;">
+                                <span style="{% if course.status == 'PUBLISHED' %}color: #2ecc71; font-weight: 500;{% endif %}">
+                                    {% if course.status == 'PUBLISHED' %}Open{% else %}{{ course.get_status_display }}{% endif %}
+                                </span>
+                                <span>|</span>
+                                <span>{{ course.instructor.get_full_name|default:course.instructor.username }}</span>
+                                <span>|</span>
+                                <a href="#" style="color: #0073e6; text-decoration: none;">More info ▼</a>
+                            </div>
+                        </div>
+                        <div>
+                            <button style="background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; transition: color 0.2s;" title="Add to favorites">
+                                ☆
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+                {% endfor %}
             </div>
-        </div>
-        {% endwith %}
         {% endfor %}
-    </div>
     {% else %}
-    <div class="card" style="text-align: center; padding: 3rem;">
+    <div style="background-color: white; padding: 3rem; text-align: center; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         <p style="font-size: 1.125rem; color: #7f8c8d; margin-bottom: 1.5rem;">
             You are not enrolled in any courses yet.
         </p>
         <a href="{% url 'course_list' %}"
-           style="display: inline-block; padding: 0.75rem 2rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px;">
-            Browse Courses
+           style="display: inline-block; padding: 0.75rem 2rem; background-color: #0073e6; color: white; text-decoration: none; border-radius: 4px;">
+            Browse Course Catalog
         </a>
     </div>
     {% endif %}
@@ -66,54 +111,43 @@
     <div style="margin-bottom: 2rem;">
         <a href="{% url 'course_create' %}"
            style="padding: 0.75rem 1.5rem; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
-            Create New Course
+            + Create New Course
         </a>
     </div>
 
     {% if courses %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
-        {% for course in courses %}
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                <div>
-                    <h3 style="margin-bottom: 0.5rem;">{{ course.title }}</h3>
-                    <p style="color: #7f8c8d; font-size: 0.875rem;">{{ course.code }}</p>
+        <div style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.25rem; color: #2c3e50; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e0e0e0;">
+                Your Courses
+            </h2>
+
+            {% for course in courses %}
+            <div style="background-color: white; border-left: 4px solid {% if course.status == 'PUBLISHED' %}#0073e6{% elif course.status == 'DRAFT' %}#f39c12{% else %}#95a5a6{% endif %}; margin-bottom: 1rem; padding: 1.5rem 2rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <div style="margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600; color: #555; font-size: 0.95rem;">{{ course.code }}</span>
+                            <span style="margin-left: 1rem; padding: 0.25rem 0.75rem; background-color: {% if course.status == 'PUBLISHED' %}#2ecc71{% elif course.status == 'DRAFT' %}#f39c12{% else %}#95a5a6{% endif %}; color: white; border-radius: 12px; font-size: 0.75rem;">
+                                {{ course.get_status_display }}
+                            </span>
+                        </div>
+                        <h3 style="font-size: 1.1rem; color: #2c3e50; margin-bottom: 0.75rem;">
+                            <a href="{% url 'course_detail' course.id %}" style="color: #2c3e50; text-decoration: none;">
+                                {{ course.code }} {{ course.title }}
+                            </a>
+                        </h3>
+                        <div style="display: flex; gap: 1.5rem; font-size: 0.9rem; color: #666;">
+                            <span>{{ course.enrolled_count }} / {{ course.max_students }} students</span>
+                            <span>|</span>
+                            <a href="{% url 'course_edit' course.id %}" style="color: #0073e6; text-decoration: none;">Edit Course</a>
+                        </div>
+                    </div>
                 </div>
-                <span style="padding: 0.25rem 0.75rem; background-color: {% if course.status == 'PUBLISHED' %}#2ecc71{% elif course.status == 'DRAFT' %}#f39c12{% else %}#95a5a6{% endif %}; color: white; border-radius: 12px; font-size: 0.75rem;">
-                    {{ course.get_status_display }}
-                </span>
             </div>
-
-            <p style="color: #555; margin-bottom: 1rem;">
-                {{ course.description|truncatewords:15 }}
-            </p>
-
-            <div style="border-top: 1px solid #e0e0e0; padding-top: 1rem; margin-bottom: 1rem;">
-                <p style="font-size: 0.875rem; color: #7f8c8d; margin-bottom: 0.5rem;">
-                    <strong>Enrolled:</strong> {{ course.enrolled_count }} / {{ course.max_students }} students
-                </p>
-                {% if course.start_date %}
-                <p style="font-size: 0.875rem; color: #7f8c8d;">
-                    <strong>Start:</strong> {{ course.start_date|date:"M d, Y" }}
-                </p>
-                {% endif %}
-            </div>
-
-            <div style="display: flex; gap: 0.5rem;">
-                <a href="{% url 'course_detail' course.id %}"
-                   style="flex: 1; text-align: center; padding: 0.5rem; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
-                    View
-                </a>
-                <a href="{% url 'course_edit' course.id %}"
-                   style="flex: 1; text-align: center; padding: 0.5rem; background-color: #f39c12; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
-                    Edit
-                </a>
-            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
     {% else %}
-    <div class="card" style="text-align: center; padding: 3rem;">
+    <div style="background-color: white; padding: 3rem; text-align: center; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         <p style="font-size: 1.125rem; color: #7f8c8d;">
             You haven't created any courses yet.
         </p>
@@ -121,7 +155,7 @@
     {% endif %}
 
 {% else %}
-    <div class="card" style="text-align: center; padding: 3rem;">
+    <div style="background-color: white; padding: 3rem; text-align: center; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         <p style="font-size: 1.125rem; color: #7f8c8d;">
             Courses functionality is available for students and instructors.
         </p>
