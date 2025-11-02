@@ -27,6 +27,7 @@ urlpatterns = [
     path('courses/', include('djangolms.courses.urls')),
     path('assignments/', include('djangolms.assignments.urls')),
     path('grades/', include('djangolms.grades.urls')),
+    path('calendar/', include('djangolms.events.urls')),
     path('', include('djangolms.notifications.urls')),
 ]
 
