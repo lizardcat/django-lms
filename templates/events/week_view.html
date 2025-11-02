@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load event_tags %}
+
+{% block title %}Week View - Calendar - USIU LMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .calendar-header h2 {
+        color: #2c3e50;
+    }
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .view-toggle a {
+        padding: 0.5rem 1rem;
+        background-color: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+    .view-toggle a:hover {
+        background-color: #2980b9;
+    }
+    .week-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1rem;
+    }
+    .day-column {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .day-header {
+        background-color: #34495e;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+    }
+    .day-header.today {
+        background-color: #3498db;
+    }
+    .day-content {
+        padding: 1rem;
+        min-height: 400px;
+    }
+    .event-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 4px;
+        border-left: 4px solid;
+    }
+    .event-item.event {
+        background-color: #e8f4fd;
+        border-left-color: #3498db;
+    }
+    .event-item.assignment {
+        background-color: #d4edda;
+        border-left-color: #28a745;
+    }
+    .event-item {
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .event-item:hover {
+        transform: translateX(4px);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .event-title {
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+    .event-time {
+        font-size: 0.85rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="calendar-header">
+        <h2>Week View</h2>
+        <div class="view-toggle">
+            <a href="{% url 'events:calendar' %}">Month</a>
+            <a href="{% url 'events:week' %}" style="background-color: #2c3e50;">Week</a>
+            <a href="{% url 'events:day' %}">Day</a>
+        </div>
+    </div>
+
+    <div class="week-grid">
+        {% for day in week_days %}
+        <div class="day-column">
+            <div class="day-header {% if day == today %}today{% endif %}">
+                <div>{{ day|date:"D" }}</div>
+                <div style="font-size: 1.5rem; margin-top: 0.5rem;">{{ day|date:"d" }}</div>
+                <div>{{ day|date:"M" }}</div>
+            </div>
+            <div class="day-content">
+                {% with events_by_date|get_item:day as day_events %}
+                    {% if day_events %}
+                        {% for item in day_events %}
+                            {% if item.assignment_type %}
+                                <a href="{% url 'assignment_detail' item.id %}" style="text-decoration: none; color: inherit;">
+                                    <div class="event-item assignment">
+                                        <div class="event-title">{{ item.title }}</div>
+                                        <div class="event-time">Due: {{ item.due_date|date:"g:i A" }}</div>
+                                    </div>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'events:event_detail' item.id %}" style="text-decoration: none; color: inherit;">
+                                    <div class="event-item event">
+                                        <div class="event-title">{{ item.title }}</div>
+                                        <div class="event-time">{{ item.start_date|date:"g:i A" }}</div>
+                                    </div>
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: #999; text-align: center; margin-top: 2rem;">No events</p>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

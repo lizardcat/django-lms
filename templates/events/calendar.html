@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load event_tags %}
+
+{% block title %}Calendar - USIU LMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .calendar-header h2 {
+        color: #2c3e50;
+    }
+    .calendar-nav {
+        display: flex;
+        gap: 1rem;
+    }
+    .calendar-nav a, .view-toggle a {
+        padding: 0.5rem 1rem;
+        background-color: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+    .calendar-nav a:hover, .view-toggle a:hover {
+        background-color: #2980b9;
+    }
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background-color: #ddd;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .calendar-day-header {
+        background-color: #34495e;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        font-weight: bold;
+    }
+    .calendar-day {
+        background-color: white;
+        min-height: 120px;
+        padding: 0.5rem;
+        position: relative;
+    }
+    .calendar-day.other-month {
+        background-color: #f9f9f9;
+        color: #999;
+    }
+    .calendar-day.today {
+        background-color: #e8f4fd;
+        border: 2px solid #3498db;
+    }
+    .day-number {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    .event-item {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        margin-bottom: 0.25rem;
+        border-radius: 3px;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+    }
+    .event-item:hover {
+        opacity: 0.8;
+    }
+    .legend {
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .legend h3 {
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+    .legend-items {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="calendar-header">
+        <div class="calendar-nav">
+            <a href="?year={{ prev_year }}&month={{ prev_month }}">&larr; Previous</a>
+            <h2>{{ current_month }} {{ current_year }}</h2>
+            <a href="?year={{ next_year }}&month={{ next_month }}">Next &rarr;</a>
+        </div>
+        <div class="view-toggle">
+            <a href="{% url 'events:calendar' %}" style="background-color: #2c3e50;">Month</a>
+            <a href="{% url 'events:week' %}">Week</a>
+            <a href="{% url 'events:day' %}">Day</a>
+        </div>
+    </div>
+
+    <div class="calendar-grid">
+        <!-- Day headers -->
+        <div class="calendar-day-header">Sun</div>
+        <div class="calendar-day-header">Mon</div>
+        <div class="calendar-day-header">Tue</div>
+        <div class="calendar-day-header">Wed</div>
+        <div class="calendar-day-header">Thu</div>
+        <div class="calendar-day-header">Fri</div>
+        <div class="calendar-day-header">Sat</div>
+
+        <!-- Calendar days -->
+        {% for week in month_days %}
+            {% for day in week %}
+                <div class="calendar-day {% if day.month != current_month_num %}other-month{% endif %} {% if day == today %}today{% endif %}">
+                    <div class="day-number">{{ day.day }}</div>
+                    {% with events_by_date|get_item:day as day_events %}
+                        {% if day_events %}
+                            {% for event in day_events %}
+                                {% if event.is_assignment %}
+                                    <a href="{% url 'assignment_detail' event.id %}" style="text-decoration: none; color: inherit;">
+                                        <div class="event-item" style="background-color: {{ event.color }};" title="{{ event.title }} - {{ event.time }}">
+                                            {{ event.course }}: {{ event.title }}
+                                        </div>
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'events:event_detail' event.id %}" style="text-decoration: none; color: inherit;">
+                                        <div class="event-item" style="background-color: {{ event.color }};" title="{{ event.title }} - {{ event.time }}">
+                                            {{ event.title }}
+                                        </div>
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <div class="legend">
+        <h3>Legend</h3>
+        <div class="legend-items">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #28a745;"></div>
+                <span>Homework</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ffc107;"></div>
+                <span>Quiz</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #17a2b8;"></div>
+                <span>Project</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #dc3545;"></div>
+                <span>Exam</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #6f42c1;"></div>
+                <span>Essay</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #007bff;"></div>
+                <span>Other Events</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
