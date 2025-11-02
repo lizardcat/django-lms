@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} - Event Details - USIU LMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .event-detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+    .event-detail-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    .event-meta {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        font-size: 1.1rem;
+    }
+    .event-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .event-type-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin-top: 1rem;
+    }
+    .detail-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .detail-section h2 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+    }
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+    .detail-item {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        border-left: 4px solid #3498db;
+    }
+    .detail-item label {
+        font-weight: bold;
+        color: #555;
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    .detail-item .value {
+        color: #2c3e50;
+        font-size: 1.1rem;
+    }
+    .back-button {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+        margin-top: 1rem;
+    }
+    .back-button:hover {
+        background-color: #2980b9;
+    }
+    .course-info {
+        background-color: #e8f4fd;
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid #3498db;
+    }
+    .course-info h3 {
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="event-detail-header">
+    <h1>{{ event.title }}</h1>
+    <div class="event-meta">
+        <div class="event-meta-item">
+            <strong>📅</strong>
+            <span>{{ event.start_date|date:"F j, Y" }}</span>
+        </div>
+        <div class="event-meta-item">
+            <strong>🕐</strong>
+            <span>
+                {% if event.all_day %}
+                    All Day
+                {% else %}
+                    {{ event.start_date|date:"g:i A" }}
+                    {% if event.end_date %}
+                        - {{ event.end_date|date:"g:i A" }}
+                    {% endif %}
+                {% endif %}
+            </span>
+        </div>
+        {% if event.duration %}
+        <div class="event-meta-item">
+            <strong>⏱</strong>
+            <span>{{ event.duration|floatformat:0 }} minutes</span>
+        </div>
+        {% endif %}
+    </div>
+    <span class="event-type-badge" style="background-color: {{ event.color }};">
+        {{ event.get_event_type_display }}
+    </span>
+</div>
+
+{% if event.course %}
+<div class="detail-section">
+    <h2>Course Information</h2>
+    <div class="course-info">
+        <h3>{{ event.course.code }} - {{ event.course.name }}</h3>
+        {% if event.course.instructor %}
+        <p><strong>Instructor:</strong> {{ event.course.instructor.get_full_name }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if event.description %}
+<div class="detail-section">
+    <h2>Description</h2>
+    <p>{{ event.description|linebreaks }}</p>
+</div>
+{% endif %}
+
+<div class="detail-section">
+    <h2>Event Details</h2>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <label>Event Type</label>
+            <div class="value">{{ event.get_event_type_display }}</div>
+        </div>
+        <div class="detail-item">
+            <label>Start Date & Time</label>
+            <div class="value">{{ event.start_date|date:"F j, Y - g:i A" }}</div>
+        </div>
+        {% if event.end_date %}
+        <div class="detail-item">
+            <label>End Date & Time</label>
+            <div class="value">{{ event.end_date|date:"F j, Y - g:i A" }}</div>
+        </div>
+        {% endif %}
+        <div class="detail-item">
+            <label>All Day Event</label>
+            <div class="value">{% if event.all_day %}Yes{% else %}No{% endif %}</div>
+        </div>
+        <div class="detail-item">
+            <label>Created By</label>
+            <div class="value">{{ event.created_by.get_full_name }}</div>
+        </div>
+        <div class="detail-item">
+            <label>Created On</label>
+            <div class="value">{{ event.created_at|date:"F j, Y - g:i A" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="detail-section">
+    <a href="{% url 'events:calendar' %}" class="back-button">← Back to Calendar</a>
+</div>
+{% endblock %}
