@@ -29,6 +29,10 @@ urlpatterns = [
     path('grades/', include('djangolms.grades.urls')),
     path('calendar/', include('djangolms.events.urls')),
     path('', include('djangolms.notifications.urls')),
+    # New features
+    path('ai/', include('djangolms.ai_assistant.urls')),
+    path('chat/', include('djangolms.chat.urls')),
+    path('livestream/', include('djangolms.livestream.urls')),
 ]
 
 # Serve media files in development
