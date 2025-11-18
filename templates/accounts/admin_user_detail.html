@@ -134,7 +134,7 @@
                 </form>
 
                 <!-- Toggle Active Status -->
-                <form method="post">
+                <form method="post" style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="toggle_active">
                     <div style="margin-bottom: 1rem;">
@@ -150,6 +150,32 @@
                         </div>
                     </div>
                 </form>
+
+                <!-- Delete User (Danger Zone) -->
+                {% if viewed_user.id != user.id and not viewed_user.is_superuser %}
+                <div style="border: 2px solid var(--accent-error); border-radius: 8px; padding: 1.5rem; background-color: rgba(234, 67, 53, 0.05);">
+                    <h4 style="margin-bottom: 1rem; color: var(--accent-error); display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Danger Zone
+                    </h4>
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.875rem;">
+                        Permanently delete this user account. This action cannot be undone. All user data, including enrollments, submissions, and activity history will be permanently removed.
+                    </p>
+                    <button type="button" onclick="confirmDelete()" class="btn-delete">
+                        Delete User Permanently
+                    </button>
+                </div>
+
+                <!-- Hidden delete form -->
+                <form id="deleteForm" method="post" style="display: none;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_user">
+                </form>
+                {% endif %}
             </div>
         </div>
 
@@ -236,6 +262,21 @@
     .btn-success:hover {
         background-color: #188038;
     }
+    .btn-delete {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: #c5221f;
+        color: white;
+        text-decoration: none;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-delete:hover {
+        background-color: #a50e0e;
+    }
     .role-badge {
         display: inline-block;
         padding: 0.25rem 0.75rem;
@@ -278,4 +319,28 @@
         border-color: var(--accent-primary);
     }
 </style>
+
+<script>
+function confirmDelete() {
+    const username = "{{ viewed_user.username }}";
+    const confirmed = confirm(
+        `Are you sure you want to permanently delete user "${username}"?\n\n` +
+        `This will permanently remove:\n` +
+        `- User account and profile\n` +
+        `- All enrollments and submissions\n` +
+        `- All activity history\n\n` +
+        `This action CANNOT be undone!\n\n` +
+        `Type the username "${username}" in the next prompt to confirm.`
+    );
+
+    if (confirmed) {
+        const typedUsername = prompt(`Please type "${username}" to confirm deletion:`);
+        if (typedUsername === username) {
+            document.getElementById('deleteForm').submit();
+        } else if (typedUsername !== null) {
+            alert('Username did not match. Deletion cancelled.');
+        }
+    }
+}
+</script>
 {% endblock %}

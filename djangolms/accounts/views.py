@@ -209,6 +209,22 @@ def admin_user_detail(request, user_id):
             status = 'activated' if user.is_active else 'deactivated'
             messages.success(request, f'User has been {status}')
 
+        elif action == 'delete_user':
+            # Prevent deleting yourself
+            if user.id == request.user.id:
+                messages.error(request, 'You cannot delete your own account.')
+                return redirect('admin_user_detail', user_id=user_id)
+
+            # Prevent deleting other superusers
+            if user.is_superuser:
+                messages.error(request, 'Cannot delete superuser accounts.')
+                return redirect('admin_user_detail', user_id=user_id)
+
+            username = user.username
+            user.delete()
+            messages.success(request, f'User "{username}" has been permanently deleted.')
+            return redirect('admin_users')
+
         return redirect('admin_user_detail', user_id=user_id)
 
     # Get user statistics
