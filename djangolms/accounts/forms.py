@@ -41,8 +41,11 @@ class UserProfileForm(forms.ModelForm):
     """
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'bio', 'profile_picture', 'date_of_birth']
+        fields = ['first_name', 'last_name', 'email', 'bio', 'profile_picture', 'date_of_birth', 'email_notifications']
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 4}),
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
+        }
+        help_texts = {
+            'email_notifications': 'Receive email notifications for important updates like new assignments, grades, and announcements',
         }

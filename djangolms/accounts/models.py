@@ -33,6 +33,10 @@ class User(AbstractUser):
         null=True,
         help_text="User's date of birth"
     )
+    email_notifications = models.BooleanField(
+        default=True,
+        help_text="Receive email notifications for assignments, grades, and announcements"
+    )
 
     class Meta:
         verbose_name = 'User'
