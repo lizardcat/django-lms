@@ -390,6 +390,19 @@
             </button>
             <a href="{% url 'home' %}" class="logo">USIU LMS</a>
         </div>
+        {% if user.is_authenticated %}
+        <div style="flex: 1; max-width: 600px; margin: 0 2rem;">
+            <form action="{% url 'global_search' %}" method="get" style="position: relative;">
+                <input type="text" name="q" placeholder="Search courses, quizzes, materials..."
+                       style="width: 100%; padding: 0.625rem 2.5rem 0.625rem 2.5rem; border: 1px solid var(--border-color); border-radius: 24px; font-size: 0.875rem; background-color: var(--bg-secondary);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+            </form>
+        </div>
+        {% endif %}
         <div class="header-right">
             <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" id="themeIcon">

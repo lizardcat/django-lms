@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, QuestionUpvote, StreamChat
+from .models import (
+    LiveStream, StreamViewer, StreamRecording, QAQuestion,
+    QuestionUpvote, StreamChat, VideoConference, VideoConferenceParticipant
+)
 
 
 @admin.register(LiveStream)
@@ -77,3 +80,93 @@ class StreamChatAdmin(admin.ModelAdmin):
     def message_preview(self, obj):
         return obj.message[:100] + '...' if len(obj.message) > 100 else obj.message
     message_preview.short_description = 'Message'
+
+
+# Video Conferencing Admin
+
+class VideoConferenceParticipantInline(admin.TabularInline):
+    """Inline admin for conference participants."""
+    model = VideoConferenceParticipant
+    extra = 0
+    readonly_fields = ['user', 'joined_at', 'left_at', 'duration_minutes']
+    fields = ['user', 'joined_at', 'left_at', 'duration_minutes', 'camera_on', 'microphone_on']
+    can_delete = False
+
+
+@admin.register(VideoConference)
+class VideoConferenceAdmin(admin.ModelAdmin):
+    """Admin interface for VideoConference model."""
+    list_display = [
+        'title', 'host', 'course', 'status', 'scheduled_start',
+        'total_participants', 'peak_participants', 'duration_minutes'
+    ]
+    list_filter = ['status', 'scheduled_start', 'restrict_to_course', 'enable_recording']
+    search_fields = ['title', 'description', 'host__username', 'course__code']
+    readonly_fields = [
+        'room_name', 'jitsi_url', 'total_participants',
+        'peak_participants', 'duration_minutes', 'created_at', 'updated_at'
+    ]
+    ordering = ['-scheduled_start']
+    inlines = [VideoConferenceParticipantInline]
+
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'description', 'host', 'course')
+        }),
+        ('Schedule', {
+            'fields': (
+                'scheduled_start', 'scheduled_end',
+                'actual_start', 'actual_end', 'status'
+            )
+        }),
+        ('Jitsi Meeting', {
+            'fields': ('room_name', 'jitsi_url')
+        }),
+        ('Security & Access', {
+            'fields': (
+                'require_password', 'password',
+                'enable_lobby', 'restrict_to_course', 'max_participants'
+            )
+        }),
+        ('Recording', {
+            'fields': ('enable_recording', 'recording_url')
+        }),
+        ('Statistics', {
+            'fields': (
+                'total_participants', 'peak_participants', 'duration_minutes'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        """Auto-set host to current user if creating new conference."""
+        if not change and not obj.host_id:
+            obj.host = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(VideoConferenceParticipant)
+class VideoConferenceParticipantAdmin(admin.ModelAdmin):
+    """Admin interface for VideoConferenceParticipant model."""
+    list_display = [
+        'user', 'conference', 'joined_at', 'left_at',
+        'duration_minutes', 'camera_on', 'microphone_on'
+    ]
+    list_filter = ['joined_at', 'camera_on', 'microphone_on']
+    search_fields = ['user__username', 'conference__title']
+    readonly_fields = ['joined_at', 'left_at']
+    ordering = ['-joined_at']
+
+    fieldsets = (
+        ('Participation Info', {
+            'fields': ('conference', 'user', 'joined_at', 'left_at', 'duration_minutes')
+        }),
+        ('Engagement', {
+            'fields': ('camera_on', 'microphone_on')
+        }),
+    )
