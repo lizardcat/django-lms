@@ -52,4 +52,11 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == self.Role.ADMIN
+        """Admin status is tied to Django's is_superuser flag"""
+        return self.is_superuser or self.role == self.Role.ADMIN
+
+    def save(self, *args, **kwargs):
+        """Automatically set role to ADMIN for superusers"""
+        if self.is_superuser:
+            self.role = self.Role.ADMIN
+        super().save(*args, **kwargs)

@@ -127,21 +127,45 @@
     }
 
     .feature-icon {
-        width: 48px;
-        height: 48px;
+        width: 56px;
+        height: 56px;
         background: var(--sidebar-hover);
-        border-radius: 50%;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 12px;
+        margin: 0 auto 16px;
     }
 
     .feature-icon svg {
-        width: 24px;
-        height: 24px;
-        fill: var(--accent-primary);
+        width: 28px;
+        height: 28px;
     }
+
+    .feature-item:nth-child(1) .feature-icon { background: #e8f0fe; }
+    .feature-item:nth-child(1) .feature-icon svg { fill: var(--accent-primary); }
+
+    .feature-item:nth-child(2) .feature-icon { background: #e6f4ea; }
+    .feature-item:nth-child(2) .feature-icon svg { fill: var(--accent-success); }
+
+    .feature-item:nth-child(3) .feature-icon { background: #fef7e0; }
+    .feature-item:nth-child(3) .feature-icon svg { fill: var(--accent-warning); }
+
+    .feature-item:nth-child(4) .feature-icon { background: #f3e8fd; }
+    .feature-item:nth-child(4) .feature-icon svg { fill: var(--accent-purple); }
+
+    .feature-item:nth-child(5) .feature-icon { background: #e1f5fe; }
+    .feature-item:nth-child(5) .feature-icon svg { fill: var(--accent-teal); }
+
+    .feature-item:nth-child(6) .feature-icon { background: #fff4e5; }
+    .feature-item:nth-child(6) .feature-icon svg { fill: var(--accent-orange); }
+
+    [data-theme="dark"] .feature-item:nth-child(1) .feature-icon { background: #1a2942; }
+    [data-theme="dark"] .feature-item:nth-child(2) .feature-icon { background: #0d3818; }
+    [data-theme="dark"] .feature-item:nth-child(3) .feature-icon { background: #3d3419; }
+    [data-theme="dark"] .feature-item:nth-child(4) .feature-icon { background: #2d1b3d; }
+    [data-theme="dark"] .feature-item:nth-child(5) .feature-icon { background: #143d47; }
+    [data-theme="dark"] .feature-item:nth-child(6) .feature-icon { background: #3d2817; }
 
     .feature-name {
         font-size: 15px;
@@ -165,22 +189,70 @@
 
     .stat-card {
         background: var(--bg-elevated);
-        border: 1px solid var(--border-color);
+        border: none;
         border-radius: 8px;
         padding: 24px;
         text-align: center;
+        border-left: 4px solid;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-card:nth-child(1) {
+        border-left-color: var(--accent-primary);
+        background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%);
+    }
+
+    [data-theme="dark"] .stat-card:nth-child(1) {
+        background: linear-gradient(135deg, #1a2942 0%, #292a2d 100%);
+    }
+
+    .stat-card:nth-child(2) {
+        border-left-color: var(--accent-success);
+        background: linear-gradient(135deg, #e6f4ea 0%, #ffffff 100%);
+    }
+
+    [data-theme="dark"] .stat-card:nth-child(2) {
+        background: linear-gradient(135deg, #0d3818 0%, #292a2d 100%);
+    }
+
+    .stat-card:nth-child(3) {
+        border-left-color: var(--accent-purple);
+        background: linear-gradient(135deg, #f3e8fd 0%, #ffffff 100%);
+    }
+
+    [data-theme="dark"] .stat-card:nth-child(3) {
+        background: linear-gradient(135deg, #2d1b3d 0%, #292a2d 100%);
+    }
+
+    .stat-card:nth-child(4) {
+        border-left-color: var(--accent-orange);
+        background: linear-gradient(135deg, #fff4e5 0%, #ffffff 100%);
+    }
+
+    [data-theme="dark"] .stat-card:nth-child(4) {
+        background: linear-gradient(135deg, #3d2817 0%, #292a2d 100%);
     }
 
     .stat-value {
         font-size: 36px;
-        font-weight: 400;
-        color: var(--accent-primary);
+        font-weight: 500;
         margin-bottom: 8px;
     }
+
+    .stat-card:nth-child(1) .stat-value { color: var(--accent-primary); }
+    .stat-card:nth-child(2) .stat-value { color: var(--accent-success); }
+    .stat-card:nth-child(3) .stat-value { color: var(--accent-purple); }
+    .stat-card:nth-child(4) .stat-value { color: var(--accent-orange); }
 
     .stat-label {
         font-size: 14px;
         color: var(--text-secondary);
+        font-weight: 500;
     }
 
     .section-header {

@@ -6,10 +6,18 @@ from .models import User
 class CustomUserCreationForm(UserCreationForm):
     """
     Custom user registration form with additional fields.
+    Admin role is restricted and can only be assigned via superuser creation.
     """
     email = forms.EmailField(required=True, help_text="Required. Enter a valid email address.")
+
+    # Exclude ADMIN from registration choices
+    REGISTRATION_ROLE_CHOICES = [
+        (User.Role.STUDENT, 'Student'),
+        (User.Role.INSTRUCTOR, 'Instructor'),
+    ]
+
     role = forms.ChoiceField(
-        choices=User.Role.choices,
+        choices=REGISTRATION_ROLE_CHOICES,
         initial=User.Role.STUDENT,
         help_text="Select your role in the LMS"
     )

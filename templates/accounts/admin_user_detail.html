@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% block title %}User Details - {{ viewed_user.username }} - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2 style="margin-bottom: 0.5rem;">User Details: {{ viewed_user.username }}</h2>
+            <p style="color: var(--text-secondary); margin: 0;">View and manage user information</p>
+        </div>
+        <a href="{% url 'admin_users' %}" class="btn-secondary">
+            Back to Users
+        </a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <!-- User Information -->
+        <div>
+            <div class="card" style="margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">User Information</h3>
+                <div style="display: grid; gap: 1.5rem;">
+                    {% if viewed_user.profile_picture %}
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <img src="{{ viewed_user.profile_picture.url }}" alt="Profile Picture"
+                             style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border-color);">
+                        <div>
+                            <div style="font-weight: 500; margin-bottom: 0.25rem;">Profile Picture</div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary);">Uploaded by user</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Username:</div>
+                        <div>{{ viewed_user.username }}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Full Name:</div>
+                        <div>{{ viewed_user.first_name }} {{ viewed_user.last_name }}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Email:</div>
+                        <div>{{ viewed_user.email }}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Role:</div>
+                        <div>
+                            {% if viewed_user.role == 'STUDENT' %}
+                            <span class="role-badge" style="background-color: rgba(26, 115, 232, 0.1); color: var(--accent-primary);">
+                                {{ viewed_user.get_role_display }}
+                            </span>
+                            {% elif viewed_user.role == 'INSTRUCTOR' %}
+                            <span class="role-badge" style="background-color: rgba(147, 52, 230, 0.1); color: var(--accent-purple);">
+                                {{ viewed_user.get_role_display }}
+                            </span>
+                            {% elif viewed_user.role == 'ADMIN' %}
+                            <span class="role-badge" style="background-color: rgba(234, 67, 53, 0.1); color: var(--accent-error);">
+                                {{ viewed_user.get_role_display }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Status:</div>
+                        <div>
+                            {% if viewed_user.is_active %}
+                            <span class="status-badge status-active">Active</span>
+                            {% else %}
+                            <span class="status-badge status-inactive">Inactive</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Superuser:</div>
+                        <div>{{ viewed_user.is_superuser|yesno:"Yes,No" }}</div>
+                    </div>
+
+                    {% if viewed_user.date_of_birth %}
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Date of Birth:</div>
+                        <div>{{ viewed_user.date_of_birth|date:"F d, Y" }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Date Joined:</div>
+                        <div>{{ viewed_user.date_joined|date:"F d, Y" }}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="font-weight: 500; color: var(--text-secondary);">Last Login:</div>
+                        <div>{{ viewed_user.last_login|date:"F d, Y H:i"|default:"Never" }}</div>
+                    </div>
+
+                    {% if viewed_user.bio %}
+                    <div style="padding: 1rem 0;">
+                        <div style="font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem;">Bio:</div>
+                        <div style="color: var(--text-primary);">{{ viewed_user.bio }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Management Actions -->
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">Management Actions</h3>
+
+                <!-- Change Role -->
+                <form method="post" style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_role">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Change User Role</label>
+                        <div style="display: flex; gap: 1rem; align-items: end;">
+                            <select name="role" style="flex: 1; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; background-color: var(--bg-primary);">
+                                {% for value, label in role_choices %}
+                                <option value="{{ value }}" {% if viewed_user.role == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn-primary">Update Role</button>
+                        </div>
+                        {% if viewed_user.is_superuser %}
+                        <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--accent-error);">
+                            Note: This user is a superuser. They will always have admin privileges.
+                        </div>
+                        {% endif %}
+                    </div>
+                </form>
+
+                <!-- Toggle Active Status -->
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Account Status</label>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            {% if viewed_user.is_active %}
+                            <button type="submit" class="btn-danger">Deactivate Account</button>
+                            <span style="font-size: 0.875rem; color: var(--text-secondary);">User can currently access the system</span>
+                            {% else %}
+                            <button type="submit" class="btn-success">Activate Account</button>
+                            <span style="font-size: 0.875rem; color: var(--text-secondary);">User cannot currently access the system</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Statistics Sidebar -->
+        <div>
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">User Statistics</h3>
+                <div style="display: grid; gap: 1.5rem;">
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: var(--accent-primary);">{{ enrolled_courses }}</div>
+                        <div class="stat-label">Enrolled Courses</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: var(--accent-success);">{{ submissions }}</div>
+                        <div class="stat-label">Submissions</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: var(--accent-purple);">{{ ai_usage }}</div>
+                        <div class="stat-label">AI Interactions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-primary {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--accent-primary);
+        color: white;
+        text-decoration: none;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    .btn-secondary {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: transparent;
+        color: var(--accent-primary);
+        text-decoration: none;
+        border: 1px solid var(--accent-primary);
+        border-radius: 4px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+        background-color: rgba(26, 115, 232, 0.1);
+    }
+    .btn-danger {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--accent-error);
+        color: white;
+        text-decoration: none;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-danger:hover {
+        background-color: #c5221f;
+    }
+    .btn-success {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--accent-success);
+        color: white;
+        text-decoration: none;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-success:hover {
+        background-color: #188038;
+    }
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-active {
+        background-color: rgba(52, 168, 83, 0.1);
+        color: var(--accent-success);
+    }
+    .status-inactive {
+        background-color: rgba(95, 99, 104, 0.1);
+        color: var(--text-secondary);
+    }
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+    }
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+    select:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+</style>
+{% endblock %}

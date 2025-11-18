@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - USIU LMS{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2 style="margin-bottom: 0.5rem;">User Management</h2>
+            <p style="color: var(--text-secondary); margin: 0;">Manage all users in the system</p>
+        </div>
+        <a href="{% url 'admin_dashboard' %}" class="btn-secondary">
+            Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <form method="get" style="display: flex; gap: 1rem; align-items: end;">
+            <div style="flex: 1;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Search Users</label>
+                <input type="text" name="search" value="{{ search_query }}"
+                       placeholder="Search by username, email, or name..."
+                       style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem;">
+            </div>
+            <div style="min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Filter by Role</label>
+                <select name="role"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; background-color: var(--bg-primary);">
+                    <option value="">All Roles</option>
+                    {% for value, label in role_choices %}
+                    <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary" style="white-space: nowrap;">
+                Apply Filters
+            </button>
+            {% if search_query or role_filter %}
+            <a href="{% url 'admin_users' %}" class="btn-secondary" style="white-space: nowrap;">
+                Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border-color);">
+                        <th style="padding: 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Username</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Name</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Email</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Role</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Status</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Joined</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 1rem;">
+                            <strong>{{ user.username }}</strong>
+                            {% if user.is_superuser %}
+                            <span style="display: inline-block; padding: 0.125rem 0.5rem; background-color: var(--accent-error); color: white; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">SUPERUSER</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem;">{{ user.first_name }} {{ user.last_name }}</td>
+                        <td style="padding: 1rem;">{{ user.email }}</td>
+                        <td style="padding: 1rem;">
+                            {% if user.role == 'STUDENT' %}
+                            <span class="role-badge" style="background-color: rgba(26, 115, 232, 0.1); color: var(--accent-primary);">
+                                {{ user.get_role_display }}
+                            </span>
+                            {% elif user.role == 'INSTRUCTOR' %}
+                            <span class="role-badge" style="background-color: rgba(147, 52, 230, 0.1); color: var(--accent-purple);">
+                                {{ user.get_role_display }}
+                            </span>
+                            {% elif user.role == 'ADMIN' %}
+                            <span class="role-badge" style="background-color: rgba(234, 67, 53, 0.1); color: var(--accent-error);">
+                                {{ user.get_role_display }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem;">
+                            {% if user.is_active %}
+                            <span class="status-badge status-active">Active</span>
+                            {% else %}
+                            <span class="status-badge status-inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem; color: var(--text-secondary);">{{ user.date_joined|date:"M d, Y" }}</td>
+                        <td style="padding: 1rem;">
+                            <a href="{% url 'admin_user_detail' user.id %}" class="action-link">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                            No users found matching your filters.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-primary {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--accent-primary);
+        color: white;
+        text-decoration: none;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    .btn-secondary {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: transparent;
+        color: var(--accent-primary);
+        text-decoration: none;
+        border: 1px solid var(--accent-primary);
+        border-radius: 4px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+        background-color: rgba(26, 115, 232, 0.1);
+    }
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-active {
+        background-color: rgba(52, 168, 83, 0.1);
+        color: var(--accent-success);
+    }
+    .status-inactive {
+        background-color: rgba(95, 99, 104, 0.1);
+        color: var(--text-secondary);
+    }
+    .action-link {
+        color: var(--accent-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .action-link:hover {
+        text-decoration: underline;
+    }
+    input:focus, select:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+</style>
+{% endblock %}
