@@ -24,6 +24,10 @@ psycopg2-binary==2.9.10
 
 # Environment variables
 python-dotenv==1.0.1
+dj-database-url==2.2.0
+
+# Production server
+gunicorn==21.2.0
 
 # Utilities
 django-cors-headers==4.6.0
