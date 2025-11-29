@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import home_view
+from djangolms.courses.search_views import global_search, search_courses, search_quizzes
 
 urlpatterns = [
     path('', home_view, name='home'),
@@ -29,6 +30,14 @@ urlpatterns = [
     path('grades/', include('djangolms.grades.urls')),
     path('calendar/', include('djangolms.events.urls')),
     path('', include('djangolms.notifications.urls')),
+    # New features
+    path('ai/', include('djangolms.ai_assistant.urls')),
+    path('chat/', include('djangolms.chat.urls')),
+    path('livestream/', include('djangolms.livestream.urls')),
+    # Search
+    path('search/', global_search, name='global_search'),
+    path('search/courses/', search_courses, name='search_courses'),
+    path('search/quizzes/', search_quizzes, name='search_quizzes'),
 ]
 
 # Serve media files in development

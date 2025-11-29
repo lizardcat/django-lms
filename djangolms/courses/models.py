@@ -127,3 +127,222 @@ class Enrollment(models.Model):
     @property
     def is_active(self):
         return self.status == self.Status.ENROLLED
+
+
+class Module(models.Model):
+    """
+    Module model for organizing course materials into sections/weeks/topics.
+    """
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='modules',
+        help_text="Course this module belongs to"
+    )
+    title = models.CharField(
+        max_length=200,
+        help_text="Module title (e.g., 'Week 1: Introduction')"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Module description"
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Display order (lower numbers first)"
+    )
+    is_published = models.BooleanField(
+        default=True,
+        help_text="Is this module visible to students?"
+    )
+    unlock_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Optional date when module becomes available"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Module'
+        verbose_name_plural = 'Modules'
+        ordering = ['course', 'order']
+        unique_together = ['course', 'order']
+
+    def __str__(self):
+        return f"{self.course.code} - {self.title}"
+
+    @property
+    def is_available(self):
+        """Check if module is available to students."""
+        if not self.is_published:
+            return False
+        if self.unlock_date:
+            return timezone.now() >= self.unlock_date
+        return True
+
+    @property
+    def material_count(self):
+        """Count of materials in this module."""
+        return self.materials.count()
+
+
+class Material(models.Model):
+    """
+    Material model for course files, documents, videos, and links.
+    """
+    class MaterialType(models.TextChoices):
+        FILE = 'FILE', 'File'
+        VIDEO = 'VIDEO', 'Video'
+        LINK = 'LINK', 'External Link'
+        DOCUMENT = 'DOCUMENT', 'Document'
+        PRESENTATION = 'PRESENTATION', 'Presentation'
+
+    module = models.ForeignKey(
+        Module,
+        on_delete=models.CASCADE,
+        related_name='materials',
+        help_text="Module this material belongs to"
+    )
+    title = models.CharField(
+        max_length=200,
+        help_text="Material title"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Material description"
+    )
+    material_type = models.CharField(
+        max_length=20,
+        choices=MaterialType.choices,
+        default=MaterialType.FILE,
+        help_text="Type of material"
+    )
+
+    # For uploaded files
+    file = models.FileField(
+        upload_to='course_materials/%Y/%m/',
+        blank=True,
+        null=True,
+        help_text="Uploaded file (PDF, video, document, etc.)"
+    )
+
+    # For external links
+    url = models.URLField(
+        blank=True,
+        max_length=500,
+        help_text="External URL (for links and videos)"
+    )
+
+    # For embedded content
+    embed_code = models.TextField(
+        blank=True,
+        help_text="Embed code for videos (YouTube, Vimeo, etc.)"
+    )
+
+    file_size = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="File size in bytes"
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Display order within module"
+    )
+    is_required = models.BooleanField(
+        default=False,
+        help_text="Is this material required for course completion?"
+    )
+    is_downloadable = models.BooleanField(
+        default=True,
+        help_text="Allow students to download this material?"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_materials',
+        help_text="User who uploaded this material"
+    )
+
+    class Meta:
+        verbose_name = 'Material'
+        verbose_name_plural = 'Materials'
+        ordering = ['module', 'order']
+
+    def __str__(self):
+        return f"{self.module.course.code} - {self.title}"
+
+    @property
+    def file_extension(self):
+        """Get file extension from filename."""
+        if self.file:
+            return self.file.name.split('.')[-1].upper()
+        return None
+
+    @property
+    def file_size_display(self):
+        """Display file size in human-readable format."""
+        if not self.file_size:
+            return None
+
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if self.file_size < 1024.0:
+                return f"{self.file_size:.1f} {unit}"
+            self.file_size /= 1024.0
+        return f"{self.file_size:.1f} TB"
+
+    @property
+    def view_count(self):
+        """Count of students who have viewed this material."""
+        return self.views.values('student').distinct().count()
+
+    def save(self, *args, **kwargs):
+        """Override save to calculate file size."""
+        if self.file and not self.file_size:
+            self.file_size = self.file.size
+        super().save(*args, **kwargs)
+
+
+class MaterialView(models.Model):
+    """
+    MaterialView model to track when students view/access materials.
+    Used for progress tracking and analytics.
+    """
+    material = models.ForeignKey(
+        Material,
+        on_delete=models.CASCADE,
+        related_name='views',
+        help_text="Material that was viewed"
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='material_views',
+        limit_choices_to={'role': 'STUDENT'},
+        help_text="Student who viewed the material"
+    )
+    viewed_at = models.DateTimeField(auto_now_add=True)
+    duration_seconds = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="How long the student viewed the material (in seconds)"
+    )
+    completed = models.BooleanField(
+        default=False,
+        help_text="Did the student complete viewing this material?"
+    )
+
+    class Meta:
+        verbose_name = 'Material View'
+        verbose_name_plural = 'Material Views'
+        ordering = ['-viewed_at']
+        indexes = [
+            models.Index(fields=['student', 'material']),
+            models.Index(fields=['material', '-viewed_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.student.username} viewed {self.material.title}"

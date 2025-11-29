@@ -1,0 +1,34 @@
+# Core Django
+Django==5.1.4
+Pillow==10.4.0
+
+# AI Integration
+anthropic==0.39.0
+openai==1.54.3
+
+# Real-time features (WebSocket, Chat, Streaming)
+channels==4.2.0
+channels-redis==4.2.1
+daphne==4.1.2
+redis==5.2.0
+
+# Background tasks
+celery==5.4.0
+django-celery-beat==2.7.0
+
+# API and Serialization
+djangorestframework==3.15.2
+
+# Database (PostgreSQL for production)
+psycopg2-binary==2.9.10
+
+# Environment variables
+python-dotenv==1.0.1
+dj-database-url==2.2.0
+
+# Production server
+gunicorn==21.2.0
+
+# Utilities
+django-cors-headers==4.6.0
+python-dateutil==2.9.0

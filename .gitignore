@@ -36,3 +36,41 @@ CLAUDE.md
 .claude
 PROGRESS_REPORT.txt
 usiu-student-dashboard.png
+
+# Redis
+dump.rdb
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Pytest
+.pytest_cache/
+
+# Node modules (if using frontend build tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Static files (collected)
+/static/
+/staticfiles/
+
+# Media files (user uploads)
+/media/
+
+# Backup files
+*.bak
+*.tmp

@@ -6,10 +6,18 @@ from .models import User
 class CustomUserCreationForm(UserCreationForm):
     """
     Custom user registration form with additional fields.
+    Admin role is restricted and can only be assigned via superuser creation.
     """
     email = forms.EmailField(required=True, help_text="Required. Enter a valid email address.")
+
+    # Exclude ADMIN from registration choices
+    REGISTRATION_ROLE_CHOICES = [
+        (User.Role.STUDENT, 'Student'),
+        (User.Role.INSTRUCTOR, 'Instructor'),
+    ]
+
     role = forms.ChoiceField(
-        choices=User.Role.choices,
+        choices=REGISTRATION_ROLE_CHOICES,
         initial=User.Role.STUDENT,
         help_text="Select your role in the LMS"
     )
@@ -33,8 +41,11 @@ class UserProfileForm(forms.ModelForm):
     """
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'bio', 'profile_picture', 'date_of_birth']
+        fields = ['first_name', 'last_name', 'email', 'bio', 'profile_picture', 'date_of_birth', 'email_notifications']
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 4}),
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
+        }
+        help_texts = {
+            'email_notifications': 'Receive email notifications for important updates like new assignments, grades, and announcements',
         }
