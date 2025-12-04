@@ -1,0 +1,743 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ room.name }} - Chat{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <div class="chat-header-left">
+            <a href="{% url 'chat:chat_home' %}" class="back-btn">←</a>
+            <div class="room-avatar-large">
+                {% if room.room_type == 'COURSE' %}
+                    📚
+                {% elif room.room_type == 'DIRECT' %}
+                    💬
+                {% else %}
+                    👥
+                {% endif %}
+            </div>
+            <div>
+                <h2 class="chat-title">{{ room.name }}</h2>
+                <div class="chat-subtitle">
+                    <span id="onlineCount">{{ online_users.count }}</span> online
+                    <span id="typingIndicator" class="typing-indicator" style="display: none;">
+                        • <span class="typing-user"></span> is typing...
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="chat-header-right">
+            {% if room.course %}
+                <a href="{% url 'courses:course_detail' room.course.id %}" class="btn-secondary btn-sm">
+                    View Course
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="messages-container" id="messagesContainer">
+        <div id="loadMoreContainer" style="text-align: center; padding: 10px;">
+            <button id="loadMoreBtn" class="btn-secondary btn-sm" style="display: none;">
+                Load Earlier Messages
+            </button>
+        </div>
+        <div id="messagesList">
+            {% for msg in messages %}
+                <div class="message {% if msg.sender == request.user %}message-own{% endif %}" data-message-id="{{ msg.id }}">
+                    <div class="message-avatar">
+                        {{ msg.sender.username|slice:":1"|upper }}
+                    </div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-sender">{{ msg.sender.get_full_name|default:msg.sender.username }}</span>
+                            <span class="message-time">{{ msg.created_at|date:"g:i A" }}</span>
+                            {% if msg.is_edited %}
+                                <span class="message-edited">(edited)</span>
+                            {% endif %}
+                        </div>
+                        <div class="message-text">{{ msg.content }}</div>
+                        {% if msg.sender == request.user %}
+                            <div class="message-actions">
+                                <button class="msg-action-btn" onclick="editMessage({{ msg.id }}, '{{ msg.content|escapejs }}')">Edit</button>
+                                <button class="msg-action-btn delete" onclick="deleteMessage({{ msg.id }})">Delete</button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Message Input -->
+    <div class="message-input-container">
+        <div id="replyPreview" class="reply-preview" style="display: none;">
+            <div class="reply-preview-content">
+                Replying to <strong><span id="replyUsername"></span></strong>
+            </div>
+            <button class="reply-cancel-btn" onclick="cancelReply()">✕</button>
+        </div>
+        <form id="messageForm" class="message-form">
+            <input type="hidden" id="replyToId" value="">
+            <textarea
+                id="messageInput"
+                class="message-input"
+                placeholder="Type a message..."
+                rows="1"
+                maxlength="5000"
+            ></textarea>
+            <button type="submit" class="send-btn" id="sendBtn">
+                <span>➤</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+.chat-container {
+    position: fixed;
+    top: 64px;
+    left: 250px;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+@media (max-width: 768px) {
+    .chat-container {
+        left: 0;
+    }
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.chat-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.back-btn {
+    font-size: 24px;
+    color: var(--text-primary);
+    text-decoration: none;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.back-btn:hover {
+    background: var(--sidebar-hover);
+}
+
+.room-avatar-large {
+    font-size: 32px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+}
+
+.chat-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.chat-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.typing-indicator {
+    color: var(--accent-primary);
+    font-style: italic;
+}
+
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    background: var(--bg-secondary);
+}
+
+#messagesList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.message {
+    display: flex;
+    gap: 12px;
+    max-width: 70%;
+    animation: messageSlideIn 0.2s ease-out;
+}
+
+.message-own {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.message-own .message-avatar {
+    background: var(--accent-success);
+}
+
+.message-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.message-sender {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.message-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.message-edited {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.message-text {
+    background: var(--bg-elevated);
+    padding: 10px 14px;
+    border-radius: 12px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
+
+.message-own .message-text {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.message-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.message:hover .message-actions {
+    opacity: 1;
+}
+
+.msg-action-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    border: none;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.msg-action-btn:hover {
+    background: var(--sidebar-hover);
+    color: var(--text-primary);
+}
+
+.msg-action-btn.delete:hover {
+    background: var(--accent-error);
+    color: white;
+}
+
+.message-input-container {
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    padding: 16px 24px;
+}
+
+.reply-preview {
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent-primary);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reply-preview-content {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.reply-cancel-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.reply-cancel-btn:hover {
+    background: var(--sidebar-hover);
+    color: var(--text-primary);
+}
+
+.message-form {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.message-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    max-height: 120px;
+    transition: border-color 0.2s;
+}
+
+.message-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.send-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent-primary);
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.send-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+.send-btn:active {
+    transform: scale(0.95);
+}
+
+.send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background: var(--sidebar-hover);
+    border-color: var(--accent-primary);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+#connectionStatus {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    display: none;
+}
+
+#connectionStatus.connected {
+    background: var(--accent-success);
+    color: white;
+}
+
+#connectionStatus.disconnected {
+    background: var(--accent-error);
+    color: white;
+}
+
+#connectionStatus.connecting {
+    background: var(--accent-warning);
+    color: var(--text-primary);
+}
+</style>
+
+<div id="connectionStatus"></div>
+
+<script>
+const roomId = {{ room.id }};
+const currentUserId = {{ request.user.id }};
+const currentUsername = '{{ request.user.username }}';
+let chatSocket = null;
+let typingTimeout = null;
+let isTyping = false;
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+
+// WebSocket connection
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat/${roomId}/`;
+
+    showConnectionStatus('connecting', 'Connecting...');
+
+    chatSocket = new WebSocket(wsUrl);
+
+    chatSocket.onopen = function(e) {
+        console.log('WebSocket connected');
+        showConnectionStatus('connected', 'Connected');
+        setTimeout(() => hideConnectionStatus(), 2000);
+        reconnectAttempts = 0;
+    };
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log('Received:', data);
+
+        if (data.type === 'message') {
+            appendMessage(data.message);
+        } else if (data.type === 'user_join') {
+            updateOnlineCount();
+        } else if (data.type === 'user_leave') {
+            updateOnlineCount();
+        } else if (data.type === 'typing') {
+            showTypingIndicator(data.username, data.is_typing);
+        }
+    };
+
+    chatSocket.onclose = function(e) {
+        console.log('WebSocket closed:', e.code, e.reason);
+        showConnectionStatus('disconnected', 'Disconnected');
+
+        // Attempt to reconnect
+        if (reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+            setTimeout(connectWebSocket, delay);
+        }
+    };
+
+    chatSocket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        showConnectionStatus('disconnected', 'Connection error');
+    };
+}
+
+// Show connection status
+function showConnectionStatus(status, message) {
+    const statusEl = document.getElementById('connectionStatus');
+    statusEl.className = status;
+    statusEl.textContent = message;
+    statusEl.style.display = 'block';
+}
+
+function hideConnectionStatus() {
+    document.getElementById('connectionStatus').style.display = 'none';
+}
+
+// Send message
+document.getElementById('messageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    const replyToId = document.getElementById('replyToId').value;
+
+    if (!message || !chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        return;
+    }
+
+    chatSocket.send(JSON.stringify({
+        'type': 'message',
+        'content': message,
+        'reply_to': replyToId || null
+    }));
+
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    cancelReply();
+    stopTyping();
+});
+
+// Auto-resize textarea
+document.getElementById('messageInput').addEventListener('input', function(e) {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+
+    // Send typing indicator
+    if (this.value.trim() && !isTyping) {
+        startTyping();
+    } else if (!this.value.trim() && isTyping) {
+        stopTyping();
+    }
+});
+
+// Typing indicator
+function startTyping() {
+    isTyping = true;
+    sendTypingStatus(true);
+
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+        stopTyping();
+    }, 3000);
+}
+
+function stopTyping() {
+    isTyping = false;
+    sendTypingStatus(false);
+    clearTimeout(typingTimeout);
+}
+
+function sendTypingStatus(typing) {
+    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+            'type': 'typing',
+            'is_typing': typing
+        }));
+    }
+}
+
+function showTypingIndicator(username, typing) {
+    const indicator = document.getElementById('typingIndicator');
+    const userSpan = indicator.querySelector('.typing-user');
+
+    if (typing && username !== currentUsername) {
+        userSpan.textContent = username;
+        indicator.style.display = 'inline';
+    } else {
+        indicator.style.display = 'none';
+    }
+}
+
+// Append message to chat
+function appendMessage(message) {
+    const messagesList = document.getElementById('messagesList');
+    const isOwn = message.sender_id === currentUserId;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isOwn ? 'message-own' : ''}`;
+    messageDiv.dataset.messageId = message.id;
+
+    const time = new Date(message.created_at).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+
+    messageDiv.innerHTML = `
+        <div class="message-avatar">
+            ${message.sender_username.charAt(0).toUpperCase()}
+        </div>
+        <div class="message-content">
+            <div class="message-header">
+                <span class="message-sender">${message.sender_name}</span>
+                <span class="message-time">${time}</span>
+                ${message.is_edited ? '<span class="message-edited">(edited)</span>' : ''}
+            </div>
+            <div class="message-text">${escapeHtml(message.content)}</div>
+            ${isOwn ? `
+                <div class="message-actions">
+                    <button class="msg-action-btn" onclick="editMessage(${message.id}, '${escapeJs(message.content)}')">Edit</button>
+                    <button class="msg-action-btn delete" onclick="deleteMessage(${message.id})">Delete</button>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    messagesList.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+// Scroll to bottom
+function scrollToBottom() {
+    const container = document.getElementById('messagesContainer');
+    container.scrollTop = container.scrollHeight;
+}
+
+// Update online count
+function updateOnlineCount() {
+    // This could be enhanced to fetch actual count via API
+    console.log('User joined/left');
+}
+
+// Reply to message
+function replyToMessage(messageId, username) {
+    document.getElementById('replyToId').value = messageId;
+    document.getElementById('replyUsername').textContent = username;
+    document.getElementById('replyPreview').style.display = 'flex';
+    document.getElementById('messageInput').focus();
+}
+
+function cancelReply() {
+    document.getElementById('replyToId').value = '';
+    document.getElementById('replyPreview').style.display = 'none';
+}
+
+// Edit message
+function editMessage(messageId, content) {
+    const newContent = prompt('Edit message:', content);
+    if (newContent && newContent.trim() && newContent !== content) {
+        fetch(`/chat/message/${messageId}/edit/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: `content=${encodeURIComponent(newContent)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Simple reload for now
+            } else {
+                alert('Error editing message');
+            }
+        });
+    }
+}
+
+// Delete message
+function deleteMessage(messageId) {
+    if (confirm('Delete this message?')) {
+        fetch(`/chat/message/${messageId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageEl) {
+                    messageEl.style.opacity = '0';
+                    setTimeout(() => messageEl.remove(), 300);
+                }
+            } else {
+                alert('Error deleting message');
+            }
+        });
+    }
+}
+
+// Utility functions
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function escapeJs(text) {
+    return text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Initialize
+connectWebSocket();
+scrollToBottom();
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (chatSocket) {
+        chatSocket.close();
+    }
+});
+</script>
+{% endblock %}

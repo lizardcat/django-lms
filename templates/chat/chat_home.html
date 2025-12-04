@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat - USIU LMS{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h1>💬 Chat</h1>
+        <p class="text-secondary">Connect with your classmates and instructors</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="chat-home-container">
+        <!-- Course Chat Rooms -->
+        <div class="chat-section">
+            <h2 class="section-title">
+                <span class="icon">🎓</span>
+                Course Chats
+            </h2>
+
+            {% if course_rooms %}
+                <div class="chat-rooms-grid">
+                    {% for room in course_rooms %}
+                        <a href="{% url 'chat:chat_room' room.id %}" class="chat-room-card">
+                            <div class="room-header">
+                                <div class="room-icon course-icon">📚</div>
+                                <div class="room-info">
+                                    <h3 class="room-name">{{ room.name }}</h3>
+                                    <p class="room-course">{{ room.course.title }}</p>
+                                </div>
+                            </div>
+                            {% if unread_counts|get_item:room.id %}
+                                <span class="unread-badge">{{ unread_counts|get_item:room.id }}</span>
+                            {% endif %}
+                            <div class="room-footer">
+                                <span class="online-count">
+                                    🟢 {{ room.online_users.count }} online
+                                </span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>No course chats available. Enroll in courses to access their chat rooms.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Direct Messages & Group Chats -->
+        <div class="chat-section">
+            <h2 class="section-title">
+                <span class="icon">👥</span>
+                Direct Messages & Groups
+            </h2>
+
+            {% if dm_rooms %}
+                <div class="chat-rooms-list">
+                    {% for room in dm_rooms %}
+                        <a href="{% url 'chat:chat_room' room.id %}" class="chat-room-item">
+                            <div class="room-avatar">
+                                {% if room.room_type == 'DIRECT' %}
+                                    💬
+                                {% else %}
+                                    👥
+                                {% endif %}
+                            </div>
+                            <div class="room-content">
+                                <div class="room-title">{{ room.name }}</div>
+                                <div class="room-type">{{ room.get_room_type_display }}</div>
+                            </div>
+                            {% if unread_counts|get_item:room.id %}
+                                <span class="unread-badge">{{ unread_counts|get_item:room.id }}</span>
+                            {% endif %}
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>No direct messages yet. Start a conversation!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-home-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.chat-section {
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title .icon {
+    font-size: 24px;
+}
+
+.chat-rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.chat-room-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s;
+    position: relative;
+}
+
+.chat-room-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+}
+
+.room-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.room-icon {
+    font-size: 32px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.room-info {
+    flex: 1;
+}
+
+.room-name {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.room-course {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.room-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.online-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.unread-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--accent-error);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.chat-rooms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chat-room-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s;
+    position: relative;
+}
+
+.chat-room-item:hover {
+    background: var(--sidebar-hover);
+    border-color: var(--accent-primary);
+}
+
+.room-avatar {
+    font-size: 28px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+}
+
+.room-content {
+    flex: 1;
+}
+
+.room-title {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.room-type {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+</style>
+{% endblock %}
