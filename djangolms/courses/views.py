@@ -31,8 +31,20 @@ def course_list(request):
 def course_detail(request, course_id):
     """
     Display course details.
+    Instructors can see their own courses regardless of status.
+    Students and anonymous users can only see published courses.
     """
-    course = get_object_or_404(Course, id=course_id, status='PUBLISHED')
+    # Allow instructors to see their own courses regardless of status
+    if request.user.is_authenticated and request.user.is_instructor:
+        course = get_object_or_404(Course, id=course_id)
+        # Check if user is the course instructor
+        if course.instructor != request.user:
+            # Not the instructor, so apply published filter
+            course = get_object_or_404(Course, id=course_id, status='PUBLISHED')
+    else:
+        # Students and anonymous users can only see published courses
+        course = get_object_or_404(Course, id=course_id, status='PUBLISHED')
+
     is_enrolled = False
 
     if request.user.is_authenticated:
