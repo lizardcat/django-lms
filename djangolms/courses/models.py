@@ -52,6 +52,18 @@ class Course(models.Model):
         null=True,
         help_text="Course end date"
     )
+
+    # Class schedule (optional - for regular meeting times)
+    class_time = models.TimeField(
+        blank=True,
+        null=True,
+        help_text="Regular class meeting time (e.g., 10:00 AM)"
+    )
+    class_days = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Days of week (e.g., Mon, Wed, Fri)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

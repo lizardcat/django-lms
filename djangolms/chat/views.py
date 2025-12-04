@@ -12,21 +12,32 @@ from .models import ChatRoom, Message, MessageReadReceipt, UserPresence, ChatNot
 @login_required
 def chat_home(request):
     """Chat home page showing all available chat rooms"""
-    # Get course chat rooms for enrolled courses
+    # Get user's courses
     if request.user.role == 'STUDENT':
         enrollments = Enrollment.objects.filter(student=request.user, status='ENROLLED')
-        course_rooms = ChatRoom.objects.filter(
-            course__in=[e.course for e in enrollments],
-            room_type='COURSE',
-            is_active=True
-        )
+        user_courses = [e.course for e in enrollments]
     else:
-        # Instructors see rooms for their courses
-        course_rooms = ChatRoom.objects.filter(
-            course__instructor=request.user,
+        # Instructors get their teaching courses (published and draft)
+        user_courses = Course.objects.filter(instructor=request.user)
+
+    # Auto-create chat rooms for courses that don't have them
+    for course in user_courses:
+        ChatRoom.objects.get_or_create(
+            course=course,
             room_type='COURSE',
-            is_active=True
+            defaults={
+                'name': f"{course.title} - Chat",
+                'created_by': request.user,
+                'is_active': True,
+            }
         )
+
+    # Get course chat rooms
+    course_rooms = ChatRoom.objects.filter(
+        course__in=user_courses,
+        room_type='COURSE',
+        is_active=True
+    ).select_related('course')
 
     # Get direct message and group chat rooms
     dm_rooms = ChatRoom.objects.filter(
@@ -49,6 +60,7 @@ def chat_home(request):
         'course_rooms': course_rooms,
         'dm_rooms': dm_rooms,
         'unread_counts': unread_counts,
+        'user_courses': user_courses,
     }
 
     return render(request, 'chat/chat_home.html', context)

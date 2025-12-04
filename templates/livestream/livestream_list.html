@@ -129,7 +129,31 @@
         <div class="empty-state">
             <div class="empty-state-icon">📹</div>
             <h3>No livestreams available</h3>
-            <p>Check back later for live sessions and recordings</p>
+            {% if is_instructor and user_courses %}
+                <p>Create your first livestream for one of your courses!</p>
+                <div style="margin-top: 20px;">
+                    <select id="createStreamCourseSelect" class="course-select" style="max-width: 400px; margin: 0 auto 16px;">
+                        <option value="">Select a course...</option>
+                        {% for course in user_courses %}
+                            <option value="{{ course.id }}">{{ course.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <br>
+                    <button onclick="createStreamForCourse()" class="btn-primary">
+                        Create Livestream
+                    </button>
+                </div>
+            {% elif is_instructor %}
+                <p>Create a course first, then you can schedule livestreams!</p>
+                <a href="{% url 'course_create' %}" class="btn-primary" style="margin-top: 16px;">
+                    Create Course
+                </a>
+            {% else %}
+                <p>Enroll in courses to see livestreams and recordings</p>
+                <a href="{% url 'course_list' %}" class="btn-primary" style="margin-top: 16px;">
+                    Browse Courses
+                </a>
+            {% endif %}
         </div>
     {% endif %}
 </div>
@@ -441,5 +465,34 @@
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+.course-select {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.course-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
 </style>
+
+<script>
+function createStreamForCourse() {
+    const select = document.getElementById('createStreamCourseSelect');
+    const courseId = select.value;
+
+    if (!courseId) {
+        alert('Please select a course first');
+        return;
+    }
+
+    window.location.href = `/livestream/course/${courseId}/create/`;
+}
+</script>
 {% endblock %}

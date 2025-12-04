@@ -12,13 +12,14 @@ from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, Strea
 
 @login_required
 def livestream_list(request):
-    """List all livestreams"""
+    """List all livestreams for user's courses"""
     # Get user's courses
     if request.user.role == 'STUDENT':
         enrollments = Enrollment.objects.filter(student=request.user, status='ENROLLED')
         user_courses = [e.course for e in enrollments]
     else:
-        user_courses = Course.objects.filter(instructor=request.user)
+        # Instructors get their teaching courses (including draft courses)
+        user_courses = list(Course.objects.filter(instructor=request.user))
 
     # Get live streams
     live_streams = LiveStream.objects.filter(
@@ -39,10 +40,15 @@ def livestream_list(request):
         status='ENDED'
     ).select_related('course', 'instructor', 'recording').order_by('-actual_end')[:20]
 
+    # Check if user is an instructor
+    is_instructor = request.user.role == 'INSTRUCTOR'
+
     context = {
         'live_streams': live_streams,
         'scheduled_streams': scheduled_streams,
         'past_streams': past_streams,
+        'user_courses': user_courses,
+        'is_instructor': is_instructor,
     }
 
     return render(request, 'livestream/livestream_list.html', context)
