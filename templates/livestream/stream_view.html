@@ -72,6 +72,19 @@
                 </div>
             {% endif %}
 
+            <!-- Stream Controls (Instructor Only) -->
+            {% if is_instructor and stream.is_live %}
+                <div class="stream-controls">
+                    <h3>🎛️ Stream Controls</h3>
+                    <button id="endStreamBtn" class="btn-end-stream" onclick="endStream()">
+                        ⏹️ End Livestream
+                    </button>
+                    <p class="control-note">
+                        ⚠️ This will end the stream for all participants and close the Jitsi meeting.
+                    </p>
+                </div>
+            {% endif %}
+
             <!-- Recording Controls (Instructor Only) -->
             {% if is_instructor and stream.is_live and stream.enable_recording %}
                 <div class="recording-controls">
@@ -606,6 +619,54 @@
     background: var(--accent-hover);
 }
 
+/* Stream Controls */
+.stream-controls {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 2px solid #ff6b6b;
+}
+
+.stream-controls h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.btn-end-stream {
+    width: 100%;
+    padding: 14px 24px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+}
+
+.btn-end-stream:hover {
+    background: #ff5252;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+}
+
+.btn-end-stream:active {
+    transform: translateY(0);
+}
+
+.control-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+    padding: 8px 12px;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 4px;
+}
+
 /* Recording Controls */
 .recording-controls {
     margin-top: 24px;
@@ -758,15 +819,25 @@ function initializeJitsi() {
             startWithVideoMuted: !isInstructor,
             enableWelcomePage: false,
             prejoinPageEnabled: false,
-            disableDeepLinking: true
+            disableDeepLinking: true,
+            // Disable features that require authentication
+            disableInviteFunctions: false,
+            doNotStoreRoom: true,
+            // Allow all participants to have moderator-like features without login
+            enableUserRolesBasedOnToken: false,
+            enableInsecureRoomNameWarning: false,
+            // Recording disabled in Jitsi UI (use browser recording instead)
+            fileRecordingsEnabled: false,
+            liveStreamingEnabled: false
         },
         interfaceConfigOverwrite: {
+            // Instructor gets more controls but without features requiring authentication
             TOOLBAR_BUTTONS: isInstructor ? [
                 'microphone', 'camera', 'desktop', 'fullscreen',
                 'fodeviceselection', 'hangup', 'profile',
-                'recording', 'livestreaming', 'etherpad', 'settings', 'raisehand',
-                'videoquality', 'filmstrip', 'stats', 'shortcuts',
-                'tileview', 'videobackgroundblur', 'help', 'mute-everyone'
+                'settings', 'raisehand', 'videoquality', 'filmstrip',
+                'stats', 'shortcuts', 'tileview', 'videobackgroundblur',
+                'help', 'mute-everyone', 'security'
             ] : [
                 'microphone', 'camera', 'fullscreen',
                 'fodeviceselection', 'hangup', 'profile',
@@ -775,7 +846,9 @@ function initializeJitsi() {
             ],
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
-            DEFAULT_REMOTE_DISPLAY_NAME: 'Student'
+            DEFAULT_REMOTE_DISPLAY_NAME: 'Student',
+            DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+            HIDE_INVITE_MORE_HEADER: true
         },
         userInfo: {
             displayName: currentUser.fullName,
@@ -1238,6 +1311,57 @@ async function uploadRecording(blob) {
     }
 }
 {% endif %}
+
+// End livestream function
+async function endStream() {
+    if (!confirm('Are you sure you want to end this livestream? This will disconnect all participants.')) {
+        return;
+    }
+
+    const endBtn = document.getElementById('endStreamBtn');
+    if (endBtn) {
+        endBtn.disabled = true;
+        endBtn.textContent = 'Ending...';
+    }
+
+    try {
+        const response = await fetch(`/livestream/stream/${streamId}/end/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // Close Jitsi meeting
+            if (jitsiApi) {
+                jitsiApi.executeCommand('hangup');
+                jitsiApi.dispose();
+            }
+
+            // Close WebSocket
+            if (streamSocket) {
+                streamSocket.close();
+            }
+
+            // Show success message and reload page
+            alert('Livestream ended successfully!');
+            window.location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to end stream');
+        }
+    } catch (error) {
+        console.error('Error ending stream:', error);
+        alert('Failed to end livestream: ' + error.message);
+        if (endBtn) {
+            endBtn.disabled = false;
+            endBtn.textContent = '⏹️ End Livestream';
+        }
+    }
+}
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', function() {
