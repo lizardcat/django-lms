@@ -8,7 +8,12 @@ from django.utils import timezone
 from datetime import timedelta
 from djangolms.accounts.models import User
 from djangolms.courses.models import Course, Module, Material, Enrollment
-from djangolms.assignments.models import Assignment, Quiz, Question, QuestionChoice
+from djangolms.assignments.models import (
+    Assignment, Quiz, Question, QuestionChoice,
+    Submission, QuizAttempt, QuizResponse
+)
+from djangolms.grades.models import GradeScale, GradeCategory, CourseGrade
+from djangolms.notifications.models import Notification, Announcement
 
 
 class Command(BaseCommand):
@@ -45,6 +50,21 @@ class Command(BaseCommand):
         for course in courses:
             self._create_course_content(course)
 
+        # Create grade scales and categories
+        self._create_grade_structure(courses)
+
+        # Generate student submissions and quiz attempts
+        self.stdout.write('\n📝 Generating student submissions and quiz attempts...')
+        submission_count, quiz_attempt_count = self._generate_submissions_and_attempts(courses, students)
+
+        # Calculate grades
+        self.stdout.write('\n📊 Calculating course grades...')
+        grade_count = self._calculate_all_grades()
+
+        # Create announcements and notifications
+        self.stdout.write('\n📢 Creating announcements and notifications...')
+        announcement_count, notification_count = self._create_notifications(courses, students)
+
         self.stdout.write(self.style.SUCCESS('\n' + '=' * 70))
         self.stdout.write(self.style.SUCCESS('✓ Sample data created successfully!'))
         self.stdout.write(self.style.SUCCESS('=' * 70))
@@ -54,15 +74,36 @@ class Command(BaseCommand):
         self.stdout.write(f'   • {len(courses)} Courses created')
         self.stdout.write(f'   • Course enrollments completed')
         self.stdout.write(f'   • Course content (modules, materials, assignments, quizzes) added')
+        self.stdout.write(f'   • {submission_count} Assignment submissions created')
+        self.stdout.write(f'   • {quiz_attempt_count} Quiz attempts completed')
+        self.stdout.write(f'   • {grade_count} Course grades calculated')
+        self.stdout.write(f'   • {announcement_count} Course announcements posted')
+        self.stdout.write(f'   • {notification_count} Student notifications sent')
 
         self.stdout.write(self.style.SUCCESS('\n📚 Login Credentials:'))
         self.stdout.write('   Instructors: username = first_name.last_name (lowercase), password = instructor123')
         self.stdout.write('   Students: username = first_name.last_name (lowercase), password = student123')
         self.stdout.write('   Example: username=james.kamau, password=student123')
 
+        self.stdout.write(self.style.SUCCESS('\n🎓 View the gradebook to see calculated grades for all students!'))
+
     def _clear_existing_data(self):
         """Clear existing sample data."""
         self.stdout.write(self.style.WARNING('\n⚠ Clearing existing data...'))
+
+        # Clear notifications and announcements
+        Notification.objects.all().delete()
+        Announcement.objects.all().delete()
+
+        # Clear grades
+        CourseGrade.objects.all().delete()
+        GradeCategory.objects.all().delete()
+        GradeScale.objects.all().delete()
+
+        # Clear quiz attempts and submissions
+        QuizResponse.objects.all().delete()
+        QuizAttempt.objects.all().delete()
+        Submission.objects.all().delete()
 
         # Clear enrollments
         Enrollment.objects.all().delete()
@@ -70,6 +111,7 @@ class Command(BaseCommand):
         # Clear course content
         Material.objects.all().delete()
         Module.objects.all().delete()
+        QuestionChoice.objects.all().delete()
         Question.objects.all().delete()
         Quiz.objects.all().delete()
         Assignment.objects.all().delete()
@@ -409,6 +451,10 @@ class Command(BaseCommand):
         # Create 4-6 modules
         num_modules = random.randint(4, 6)
 
+        # Track whether we've created project and exam assignments
+        project_created = False
+        exam_created = False
+
         for i in range(1, num_modules + 1):
             module = Module.objects.create(
                 course=course,
@@ -428,26 +474,32 @@ class Command(BaseCommand):
                     order=j,
                 )
 
-            # Create 1 assignment per module
+            # Create 1 assignment per module (homework type)
             Assignment.objects.create(
                 course=course,
-                title=f'{course.code} - Assignment {i}',
+                title=f'{course.code} - Module {i} Assignment',
                 description=self._get_assignment_description(course.code, i),
+                assignment_type='HOMEWORK',
                 due_date=timezone.now() + timedelta(days=i*10),
-                max_points=100,
-                submission_type='FILE',
-                is_published=True,
+                total_points=100,
             )
 
-            # Create 1 quiz per module
-            quiz = Quiz.objects.create(
+            # Create 1 quiz assignment per module
+            quiz_assignment = Assignment.objects.create(
                 course=course,
                 title=f'{course.code} - Module {i} Quiz',
                 description=f'Assessment quiz for module {i} content',
-                time_limit=30,  # 30 minutes
+                assignment_type='QUIZ',
                 due_date=timezone.now() + timedelta(days=i*10 + 5),
+                total_points=100,
+            )
+
+            # Create Quiz linked to the assignment
+            quiz = Quiz.objects.create(
+                assignment=quiz_assignment,
+                time_limit=30,  # 30 minutes
+                allow_multiple_attempts=True,
                 max_attempts=2,
-                is_published=True,
                 show_correct_answers=True,
                 randomize_questions=True,
             )
@@ -472,6 +524,30 @@ class Command(BaseCommand):
                         is_correct=is_correct,
                         order=choice_idx + 1,
                     )
+
+            # Add a project assignment in the middle of the course
+            if not project_created and i == num_modules // 2:
+                Assignment.objects.create(
+                    course=course,
+                    title=f'{course.code} - Course Project',
+                    description=f'Complete a comprehensive project that demonstrates your understanding of {course.title} concepts covered so far.',
+                    assignment_type='PROJECT',
+                    due_date=timezone.now() + timedelta(days=i*10 + 15),
+                    total_points=150,
+                )
+                project_created = True
+
+            # Add a final exam assignment in the last module
+            if not exam_created and i == num_modules:
+                Assignment.objects.create(
+                    course=course,
+                    title=f'{course.code} - Final Exam',
+                    description=f'Comprehensive final exam covering all course material for {course.title}.',
+                    assignment_type='EXAM',
+                    due_date=timezone.now() + timedelta(days=i*10 + 20),
+                    total_points=200,
+                )
+                exam_created = True
 
     def _get_module_title(self, course_code, module_num):
         """Generate module title based on course."""
@@ -614,3 +690,225 @@ Upload your completed assignment through the course portal. Late submissions wil
         ]
         random.shuffle(choices)
         return choices
+
+    def _create_grade_structure(self, courses):
+        """Create grade scales and categories for all courses."""
+        self.stdout.write('\n📊 Setting up grade scales and categories...')
+
+        for course in courses:
+            # Create grade scale
+            GradeScale.objects.get_or_create(
+                course=course,
+                defaults={
+                    'a_min': 90.00,
+                    'b_min': 80.00,
+                    'c_min': 70.00,
+                    'd_min': 60.00,
+                    'use_plus_minus': True,
+                }
+            )
+
+            # Create grade categories with weights
+            categories = [
+                {'name': 'Homework', 'weight': 20.00, 'assignment_type': 'HOMEWORK', 'drop_lowest': 1},
+                {'name': 'Quizzes', 'weight': 30.00, 'assignment_type': 'QUIZ', 'drop_lowest': 0},
+                {'name': 'Projects', 'weight': 25.00, 'assignment_type': 'PROJECT', 'drop_lowest': 0},
+                {'name': 'Exams', 'weight': 25.00, 'assignment_type': 'EXAM', 'drop_lowest': 0},
+            ]
+
+            for cat_data in categories:
+                GradeCategory.objects.get_or_create(
+                    course=course,
+                    assignment_type=cat_data['assignment_type'],
+                    defaults={
+                        'name': cat_data['name'],
+                        'weight': cat_data['weight'],
+                        'drop_lowest': cat_data['drop_lowest'],
+                    }
+                )
+
+        self.stdout.write(f'  ✓ Grade scales and categories configured for {len(courses)} courses')
+
+    def _generate_submissions_and_attempts(self, courses, students):
+        """Generate assignment submissions and quiz attempts for students."""
+        submission_count = 0
+        quiz_attempt_count = 0
+
+        for course in courses:
+            # Get enrolled students
+            enrollments = Enrollment.objects.filter(course=course, status='ENROLLED')
+            enrolled_students = [e.student for e in enrollments]
+
+            if not enrolled_students:
+                continue
+
+            # Get all assignments (non-quiz)
+            assignments = Assignment.objects.filter(course=course).exclude(assignment_type='QUIZ')
+
+            for assignment in assignments:
+                # 70-90% of students submit assignments
+                num_submissions = int(len(enrolled_students) * random.uniform(0.7, 0.9))
+                submitting_students = random.sample(enrolled_students, num_submissions)
+
+                for student in submitting_students:
+                    # Create submission
+                    submission = Submission.objects.create(
+                        assignment=assignment,
+                        student=student,
+                        submission_text=f"Submission for {assignment.title} by {student.get_full_name()}.\n\nThis is my completed assignment work.",
+                        submitted_at=timezone.now() - timedelta(days=random.randint(0, 30)),
+                        graded=True,
+                        score=random.randint(60, 100),  # Random score between 60-100
+                        feedback=random.choice([
+                            "Good work! Well done.",
+                            "Excellent submission. Keep it up!",
+                            "Nice effort. Could improve on clarity.",
+                            "Great job! Very thorough.",
+                            "Good understanding of the concepts.",
+                        ]),
+                        graded_by=course.instructor,
+                        graded_at=timezone.now() - timedelta(days=random.randint(0, 15)),
+                    )
+                    submission_count += 1
+
+            # Get all quizzes
+            quizzes = Quiz.objects.filter(assignment__course=course)
+
+            for quiz in quizzes:
+                # 75-95% of students attempt quizzes
+                num_attempts = int(len(enrolled_students) * random.uniform(0.75, 0.95))
+                attempting_students = random.sample(enrolled_students, num_attempts)
+
+                for student in attempting_students:
+                    # Create quiz attempt
+                    attempt = QuizAttempt.objects.create(
+                        quiz=quiz,
+                        student=student,
+                        attempt_number=1,
+                        started_at=timezone.now() - timedelta(days=random.randint(0, 30)),
+                    )
+
+                    # Create responses for each question
+                    questions = Question.objects.filter(quiz=quiz)
+                    for question in questions:
+                        # Get all choices
+                        choices = list(QuestionChoice.objects.filter(question=question))
+                        if choices:
+                            # 70-90% chance of getting the answer correct
+                            if random.random() < 0.8:
+                                # Pick correct answer
+                                correct_choice = next((c for c in choices if c.is_correct), None)
+                                answer = correct_choice.choice_text if correct_choice else choices[0].choice_text
+                            else:
+                                # Pick random answer
+                                answer = random.choice(choices).choice_text
+
+                            QuizResponse.objects.create(
+                                attempt=attempt,
+                                question=question,
+                                answer_text=answer,
+                            )
+
+                    # Grade the quiz
+                    attempt.grade_quiz()
+                    quiz_attempt_count += 1
+
+        return submission_count, quiz_attempt_count
+
+    def _calculate_all_grades(self):
+        """Calculate grades for all enrollments."""
+        grade_count = 0
+
+        enrollments = Enrollment.objects.filter(status='ENROLLED')
+
+        for enrollment in enrollments:
+            # Create or get course grade
+            course_grade, created = CourseGrade.objects.get_or_create(
+                enrollment=enrollment
+            )
+
+            # Calculate the grade
+            course_grade.calculate_grade()
+            grade_count += 1
+
+        self.stdout.write(f'  ✓ Calculated grades for {grade_count} enrollments')
+        return grade_count
+
+    def _create_notifications(self, courses, students):
+        """Create sample announcements and notifications."""
+        announcement_count = 0
+        notification_count = 0
+
+        announcement_templates = [
+            {
+                'title': 'Welcome to {course_title}!',
+                'content': 'Welcome to {course_title}! I\'m excited to have you in this course. Please review the syllabus and course materials. If you have any questions, feel free to reach out during office hours.',
+                'priority': 'NORMAL',
+            },
+            {
+                'title': 'Midterm Exam Schedule',
+                'content': 'The midterm exam for {course_title} is scheduled for next week. Please review all materials from modules 1-3. The exam will be held during regular class time. Good luck!',
+                'priority': 'HIGH',
+            },
+            {
+                'title': 'Assignment Deadline Reminder',
+                'content': 'Reminder: The assignment for Module 2 is due this Friday at 11:59 PM. Please submit your work through the course portal. Late submissions will incur a 10% penalty per day.',
+                'priority': 'NORMAL',
+            },
+            {
+                'title': 'Office Hours Update',
+                'content': 'My office hours this week will be on Tuesday and Thursday from 2-4 PM. Feel free to drop by if you have questions about the course material or assignments.',
+                'priority': 'LOW',
+            },
+        ]
+
+        for course in courses:
+            # Create 2-3 announcements per course
+            num_announcements = random.randint(2, 3)
+            selected_templates = random.sample(announcement_templates, min(num_announcements, len(announcement_templates)))
+
+            for template in selected_templates:
+                announcement = Announcement.objects.create(
+                    course=course,
+                    author=course.instructor,
+                    title=template['title'].format(course_title=course.title),
+                    content=template['content'].format(course_title=course.title),
+                    priority=template['priority'],
+                    pinned=random.choice([True, False]) if template['priority'] == 'HIGH' else False,
+                    publish_at=timezone.now() - timedelta(days=random.randint(1, 20)),
+                )
+                announcement_count += 1
+
+                # Create notifications for enrolled students
+                enrollments = Enrollment.objects.filter(course=course, status='ENROLLED')[:10]  # Notify first 10 students
+                for enrollment in enrollments:
+                    Notification.objects.create(
+                        recipient=enrollment.student,
+                        notification_type='ANNOUNCEMENT',
+                        title=f'New announcement in {course.code}',
+                        message=template['title'].format(course_title=course.title),
+                        related_course=course,
+                        related_announcement=announcement,
+                        action_url=f'/courses/{course.id}/announcements/',
+                        is_read=random.choice([True, False]),
+                    )
+                    notification_count += 1
+
+        # Create some grading notifications
+        graded_submissions = Submission.objects.filter(graded=True)[:50]  # First 50 graded submissions
+        for submission in graded_submissions:
+            Notification.objects.create(
+                recipient=submission.student,
+                notification_type='GRADE',
+                title=f'Assignment Graded: {submission.assignment.title}',
+                message=f'Your assignment "{submission.assignment.title}" has been graded. Score: {submission.score}/{submission.assignment.total_points}',
+                related_course=submission.assignment.course,
+                action_url=f'/assignments/{submission.assignment.id}/submission/',
+                is_read=random.choice([True, False]),
+            )
+            notification_count += 1
+
+        self.stdout.write(f'  ✓ Created {announcement_count} announcements')
+        self.stdout.write(f'  ✓ Sent {notification_count} notifications')
+
+        return announcement_count, notification_count
