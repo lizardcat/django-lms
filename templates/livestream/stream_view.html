@@ -567,7 +567,7 @@
 }
 </style>
 
-<script src="https://meet.jit.si/external_api.js"></script>
+<script src="{{ jitsi_external_api_url }}"></script>
 <script>
 const streamId = {{ stream.id }};
 const streamKey = '{{ stream.stream_key }}';
@@ -588,7 +588,7 @@ if (isLive) {
 }
 
 function initializeJitsi() {
-    const domain = 'meet.jit.si';
+    const domain = '{{ jitsi_domain }}';
     const options = {
         roomName: `USIULMSStream${streamId}${streamKey.slice(0, 8)}`,
         width: '100%',
@@ -599,7 +599,17 @@ function initializeJitsi() {
             startWithVideoMuted: !isInstructor,
             enableWelcomePage: false,
             prejoinPageEnabled: false,
-            disableDeepLinking: true
+            disableDeepLinking: true,
+            // Disable lobby and authentication requirements
+            enableUserRolesBasedOnToken: false,
+            enableInsecureRoomNameWarning: false,
+            // Auto-join without prompts
+            requireDisplayName: false,
+            // Disable authentication popup
+            disableProfile: false,
+            // Performance optimizations
+            enableNoAudioDetection: true,
+            enableNoisyMicDetection: true
         },
         interfaceConfigOverwrite: {
             TOOLBAR_BUTTONS: isInstructor ? [
@@ -616,7 +626,10 @@ function initializeJitsi() {
             ],
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
-            DEFAULT_REMOTE_DISPLAY_NAME: 'Student'
+            DEFAULT_REMOTE_DISPLAY_NAME: 'Student',
+            // Disable authentication prompts
+            DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+            HIDE_INVITE_MORE_HEADER: true
         },
         userInfo: {
             displayName: currentUser.fullName,

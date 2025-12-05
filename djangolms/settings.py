@@ -233,6 +233,12 @@ SERVER_EMAIL = os.getenv('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 SITE_NAME = os.getenv('SITE_NAME', 'USIU LMS')
 SITE_URL = os.getenv('SITE_URL', 'https://your-domain.com' if not DEBUG else 'http://localhost:8000')
 
+# Jitsi Configuration (for video conferencing and livestreaming)
+# Using 8x8.vc instead of meet.jit.si to avoid authentication issues
+# You can also set this to your own self-hosted Jitsi domain
+JITSI_DOMAIN = os.getenv('JITSI_DOMAIN', '8x8.vc')
+JITSI_EXTERNAL_API_URL = os.getenv('JITSI_EXTERNAL_API_URL', f'https://{JITSI_DOMAIN}/external_api.js')
+
 # Celery Configuration (for background tasks)
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{os.getenv("REDIS_HOST", "localhost")}:{os.getenv("REDIS_PORT", 6379)}/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'redis://{os.getenv("REDIS_HOST", "localhost")}:{os.getenv("REDIS_PORT", 6379)}/0')
