@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name_plural': 'Student Analytics',
                 'ordering': ['-last_analyzed'],
-                'unique_together': {('student', 'course')},
+                'unique_together': [('student', 'course')],
             },
         ),
         migrations.CreateModel(
