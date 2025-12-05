@@ -177,21 +177,22 @@ LOGIN_REDIRECT_URL = '/accounts/profile/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Django Channels Configuration
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(os.getenv('REDIS_HOST', 'localhost'), int(os.getenv('REDIS_PORT', 6379)))],
-        },
-    },
-}
-
-# For development without Redis, use in-memory channel layer
+# For production with Redis, use RedisChannelLayer
 # CHANNEL_LAYERS = {
 #     'default': {
-#         'BACKEND': 'channels.layers.InMemoryChannelLayer'
-#     }
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [(os.getenv('REDIS_HOST', 'localhost'), int(os.getenv('REDIS_PORT', 6379)))],
+#         },
+#     },
 # }
+
+# For development without Redis, use in-memory channel layer
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 
 # Django REST Framework Configuration
 REST_FRAMEWORK = {
@@ -232,6 +233,12 @@ SERVER_EMAIL = os.getenv('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 # Site Configuration (for email templates and external links)
 SITE_NAME = os.getenv('SITE_NAME', 'USIU LMS')
 SITE_URL = os.getenv('SITE_URL', 'https://your-domain.com' if not DEBUG else 'http://localhost:8000')
+
+# Jitsi Configuration (for video conferencing and livestreaming)
+# Using 8x8.vc instead of meet.jit.si to avoid authentication issues
+# You can also set this to your own self-hosted Jitsi domain
+JITSI_DOMAIN = os.getenv('JITSI_DOMAIN', '8x8.vc')
+JITSI_EXTERNAL_API_URL = os.getenv('JITSI_EXTERNAL_API_URL', f'https://{JITSI_DOMAIN}/external_api.js')
 
 # Celery Configuration (for background tasks)
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{os.getenv("REDIS_HOST", "localhost")}:{os.getenv("REDIS_PORT", 6379)}/0')

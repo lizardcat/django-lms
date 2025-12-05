@@ -5,9 +5,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Q
+from django.conf import settings
 
 from djangolms.courses.models import Course, Enrollment
-from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, StreamChat
+from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, StreamChat, VideoConference
 
 
 @login_required
@@ -94,6 +95,8 @@ def stream_view(request, stream_id):
         'qa_questions': qa_questions,
         'chat_messages': chat_messages,
         'is_instructor': request.user == stream.instructor,
+        'jitsi_domain': settings.JITSI_DOMAIN,
+        'jitsi_external_api_url': settings.JITSI_EXTERNAL_API_URL,
     }
 
     return render(request, 'livestream/stream_view.html', context)
@@ -133,7 +136,6 @@ def create_stream(request, course_id):
             return redirect('livestream:create_stream', course_id=course.id)
 
         try:
-            from datetime import datetime
             from django.utils.dateparse import parse_datetime
 
             start_dt = parse_datetime(scheduled_start)
@@ -141,6 +143,12 @@ def create_stream(request, course_id):
 
             if not start_dt or not end_dt:
                 raise ValueError("Invalid date format")
+
+            # Make datetimes timezone-aware if they're naive
+            if timezone.is_naive(start_dt):
+                start_dt = timezone.make_aware(start_dt)
+            if timezone.is_naive(end_dt):
+                end_dt = timezone.make_aware(end_dt)
 
             if end_dt <= start_dt:
                 messages.error(request, "End time must be after start time.")
@@ -153,19 +161,34 @@ def create_stream(request, course_id):
             messages.error(request, "Invalid date format. Please use the datetime picker.")
             return redirect('livestream:create_stream', course_id=course.id)
 
+        # Create Jitsi video conference for actual streaming
+        video_conference = VideoConference.objects.create(
+            course=course,
+            host=request.user,
+            title=title,
+            description=description,
+            scheduled_start=start_dt,
+            scheduled_end=end_dt,
+            enable_recording=enable_recording,
+            restrict_to_course=True,
+            max_participants=1000
+        )
+
+        # Create livestream linked to the video conference
         stream = LiveStream.objects.create(
             course=course,
             instructor=request.user,
             title=title,
             description=description,
-            scheduled_start=scheduled_start,
-            scheduled_end=scheduled_end,
+            scheduled_start=start_dt,
+            scheduled_end=end_dt,
             allow_chat=allow_chat,
             allow_qa=allow_qa,
-            enable_recording=enable_recording
+            enable_recording=enable_recording,
+            video_conference=video_conference
         )
 
-        messages.success(request, f"Livestream '{title}' created successfully!")
+        messages.success(request, f"Livestream '{title}' created successfully! Join via Jitsi Meet when it's time to start.")
         return redirect('livestream:stream_detail', stream_id=stream.id)
 
     context = {
@@ -294,6 +317,56 @@ def pin_question(request, question_id):
     return JsonResponse({'success': True, 'is_pinned': question.is_pinned})
 
 
+@require_POST
+@login_required
+def upload_recording(request, stream_id):
+    """Upload a recording for a livestream"""
+    stream = get_object_or_404(LiveStream, id=stream_id)
+
+    # Only instructor can upload recordings
+    if stream.instructor != request.user:
+        return JsonResponse({'error': 'Not authorized'}, status=403)
+
+    if 'recording' not in request.FILES:
+        return JsonResponse({'error': 'No recording file provided'}, status=400)
+
+    recording_file = request.FILES['recording']
+
+    # Validate file type (should be video)
+    allowed_types = ['video/webm', 'video/mp4', 'video/x-matroska']
+    if recording_file.content_type not in allowed_types:
+        return JsonResponse({'error': 'Invalid file type. Must be video.'}, status=400)
+
+    # Calculate file size in MB
+    file_size_mb = recording_file.size / (1024 * 1024)
+
+    # Create or update recording
+    recording, created = StreamRecording.objects.get_or_create(
+        stream=stream,
+        defaults={
+            'title': stream.title,
+            'description': stream.description,
+            'video_file': recording_file,
+            'file_size_mb': round(file_size_mb, 2),
+            'is_public': False,
+            'processed_at': timezone.now()
+        }
+    )
+
+    if not created:
+        # Update existing recording
+        recording.video_file = recording_file
+        recording.file_size_mb = round(file_size_mb, 2)
+        recording.processed_at = timezone.now()
+        recording.save()
+
+    return JsonResponse({
+        'success': True,
+        'recording_id': recording.id,
+        'message': 'Recording uploaded successfully'
+    })
+
+
 @login_required
 def recording_view(request, recording_id):
     """View a recorded livestream"""
@@ -325,3 +398,28 @@ def recording_view(request, recording_id):
     }
 
     return render(request, 'livestream/recording_view.html', context)
+
+
+@require_POST
+@login_required
+def delete_recording(request, recording_id):
+    """Delete a recording"""
+    recording = get_object_or_404(StreamRecording, id=recording_id)
+    stream = recording.stream
+
+    # Only instructor who owns the stream can delete recordings
+    if stream.instructor != request.user:
+        return JsonResponse({'error': 'Not authorized'}, status=403)
+
+    try:
+        # Delete the video file from storage if it exists
+        if recording.video_file:
+            recording.video_file.delete(save=False)
+
+        # Delete the recording from database
+        recording.delete()
+
+        messages.success(request, "Recording deleted successfully!")
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
