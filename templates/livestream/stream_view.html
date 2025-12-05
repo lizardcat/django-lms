@@ -19,6 +19,14 @@
                             {{ stream.scheduled_start|date:"F d, Y - g:i A" }}
                         </div>
                         <div class="countdown" id="countdown"></div>
+                        {% if stream.jitsi_url and is_instructor %}
+                            <div style="margin-top: 24px;">
+                                <p style="margin-bottom: 12px;">Ready to start? Join the meeting room:</p>
+                                <a href="{{ stream.jitsi_url }}" target="_blank" class="btn-primary">
+                                    🎥 Join Jitsi Meeting
+                                </a>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             {% else %}
@@ -573,6 +581,7 @@ const streamId = {{ stream.id }};
 const streamKey = '{{ stream.stream_key }}';
 const isLive = {{ stream.is_live|yesno:"true,false" }};
 const isInstructor = {{ is_instructor|yesno:"true,false" }};
+const jitsiRoomName = '{{ stream.jitsi_room_name|default:"" }}';
 const currentUser = {
     id: {{ request.user.id }},
     username: '{{ request.user.username }}',
@@ -583,14 +592,14 @@ let streamSocket = null;
 let jitsiApi = null;
 
 // Initialize Jitsi Meet for live streams
-if (isLive) {
+if (isLive && jitsiRoomName) {
     initializeJitsi();
 }
 
 function initializeJitsi() {
     const domain = 'meet.jit.si';
     const options = {
-        roomName: `USIULMSStream${streamId}${streamKey.slice(0, 8)}`,
+        roomName: jitsiRoomName || `USIULMSStream${streamId}${streamKey.slice(0, 8)}`,
         width: '100%',
         height: '600px',
         parentNode: document.getElementById('jitsiContainer'),

@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.db.models import Q
 
 from djangolms.courses.models import Course, Enrollment
-from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, StreamChat
+from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, StreamChat, VideoConference
 
 
 @login_required
@@ -158,19 +158,34 @@ def create_stream(request, course_id):
             messages.error(request, "Invalid date format. Please use the datetime picker.")
             return redirect('livestream:create_stream', course_id=course.id)
 
+        # Create Jitsi video conference for actual streaming
+        video_conference = VideoConference.objects.create(
+            course=course,
+            host=request.user,
+            title=title,
+            description=description,
+            scheduled_start=start_dt,
+            scheduled_end=end_dt,
+            enable_recording=enable_recording,
+            restrict_to_course=True,
+            max_participants=1000
+        )
+
+        # Create livestream linked to the video conference
         stream = LiveStream.objects.create(
             course=course,
             instructor=request.user,
             title=title,
             description=description,
-            scheduled_start=scheduled_start,
-            scheduled_end=scheduled_end,
+            scheduled_start=start_dt,
+            scheduled_end=end_dt,
             allow_chat=allow_chat,
             allow_qa=allow_qa,
-            enable_recording=enable_recording
+            enable_recording=enable_recording,
+            video_conference=video_conference
         )
 
-        messages.success(request, f"Livestream '{title}' created successfully!")
+        messages.success(request, f"Livestream '{title}' created successfully! Join via Jitsi Meet when it's time to start.")
         return redirect('livestream:stream_detail', stream_id=stream.id)
 
     context = {
