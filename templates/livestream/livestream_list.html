@@ -5,8 +5,25 @@
 {% block content %}
 <div class="content-wrapper">
     <div class="page-header">
-        <h1>📹 Livestreams & Video Conferences</h1>
-        <p class="text-secondary">Join live sessions and watch recordings</p>
+        <div class="page-header-content">
+            <div>
+                <h1>📹 Livestreams & Video Conferences</h1>
+                <p class="text-secondary">Join live sessions and watch recordings</p>
+            </div>
+            {% if is_instructor and user_courses %}
+                <div class="page-header-actions">
+                    <select id="createStreamCourseSelectTop" class="course-select-inline">
+                        <option value="">Select a course...</option>
+                        {% for course in user_courses %}
+                            <option value="{{ course.id }}">{{ course.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <button onclick="createStreamFromTop()" class="btn-create-stream">
+                        ➕ Create Livestream
+                    </button>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     {% if messages %}
@@ -159,6 +176,59 @@
 </div>
 
 <style>
+.page-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.course-select-inline {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    min-width: 200px;
+}
+
+.course-select-inline:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.btn-create-stream {
+    padding: 10px 20px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-create-stream:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-create-stream:active {
+    transform: translateY(0);
+}
+
 .streams-section {
     background: var(--bg-elevated);
     border-radius: 12px;
@@ -485,6 +555,18 @@
 <script>
 function createStreamForCourse() {
     const select = document.getElementById('createStreamCourseSelect');
+    const courseId = select.value;
+
+    if (!courseId) {
+        alert('Please select a course first');
+        return;
+    }
+
+    window.location.href = `/livestream/course/${courseId}/create/`;
+}
+
+function createStreamFromTop() {
+    const select = document.getElementById('createStreamCourseSelectTop');
     const courseId = select.value;
 
     if (!courseId) {

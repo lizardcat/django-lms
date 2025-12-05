@@ -395,3 +395,28 @@ def recording_view(request, recording_id):
     }
 
     return render(request, 'livestream/recording_view.html', context)
+
+
+@require_POST
+@login_required
+def delete_recording(request, recording_id):
+    """Delete a recording"""
+    recording = get_object_or_404(StreamRecording, id=recording_id)
+    stream = recording.stream
+
+    # Only instructor who owns the stream can delete recordings
+    if stream.instructor != request.user:
+        return JsonResponse({'error': 'Not authorized'}, status=403)
+
+    try:
+        # Delete the video file from storage if it exists
+        if recording.video_file:
+            recording.video_file.delete(save=False)
+
+        # Delete the recording from database
+        recording.delete()
+
+        messages.success(request, "Recording deleted successfully!")
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
