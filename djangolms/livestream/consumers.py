@@ -23,6 +23,17 @@ class LiveStreamConsumer(AsyncWebsocketConsumer):
             await self.close(code=4004)
             return
 
+        # Check if user is authenticated
+        if not self.user.is_authenticated:
+            await self.close()
+            return
+
+        # Verify user has access to this stream
+        has_access = await self.check_stream_access()
+        if not has_access:
+            await self.close()
+            return
+
         # Join stream group
         await self.channel_layer.group_add(self.stream_group_name, self.channel_name)
 
@@ -444,3 +455,29 @@ class LiveStreamConsumer(AsyncWebsocketConsumer):
 
         except QAQuestion.DoesNotExist:
             return None
+
+    @database_sync_to_async
+    def check_stream_access(self):
+        """Check if user has access to this stream"""
+        from .models import LiveStream
+        from djangolms.courses.models import Enrollment
+
+        try:
+            stream = LiveStream.objects.get(id=self.stream_id)
+
+            # Instructors can always access their own streams
+            if stream.instructor == self.user:
+                return True
+
+            # Check if user is enrolled in the course
+            if Enrollment.objects.filter(
+                student=self.user,
+                course=stream.course,
+                status='ENROLLED'
+            ).exists():
+                return True
+
+            return False
+
+        except LiveStream.DoesNotExist:
+            return False
