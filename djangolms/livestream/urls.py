@@ -14,4 +14,5 @@ urlpatterns = [
     path('question/<int:question_id>/answer/', views.answer_question, name='answer_question'),
     path('question/<int:question_id>/pin/', views.pin_question, name='pin_question'),
     path('recording/<int:recording_id>/', views.recording_view, name='recording_view'),
+    path('recording/<int:recording_id>/delete/', views.delete_recording, name='delete_recording'),
 ]
