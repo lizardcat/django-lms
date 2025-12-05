@@ -828,19 +828,23 @@ function initializeJitsi() {
             enableInsecureRoomNameWarning: false,
             // Recording disabled in Jitsi UI (use browser recording instead)
             fileRecordingsEnabled: false,
-            liveStreamingEnabled: false
+            liveStreamingEnabled: false,
+            // Disable authentication requirements completely
+            disableProfile: true,
+            hideConferenceSubject: false
         },
         interfaceConfigOverwrite: {
-            // Instructor gets more controls but without features requiring authentication
+            // Instructor gets more controls but NO buttons that require authentication
             TOOLBAR_BUTTONS: isInstructor ? [
                 'microphone', 'camera', 'desktop', 'fullscreen',
-                'fodeviceselection', 'hangup', 'profile',
+                'fodeviceselection', 'hangup',
                 'settings', 'raisehand', 'videoquality', 'filmstrip',
                 'stats', 'shortcuts', 'tileview', 'videobackgroundblur',
-                'help', 'mute-everyone', 'security'
+                'help'
+                // Removed: 'profile', 'mute-everyone', 'security' - these trigger authentication popup
             ] : [
                 'microphone', 'camera', 'fullscreen',
-                'fodeviceselection', 'hangup', 'profile',
+                'fodeviceselection', 'hangup',
                 'raisehand', 'videoquality', 'filmstrip',
                 'tileview', 'videobackgroundblur'
             ],
@@ -848,11 +852,14 @@ function initializeJitsi() {
             SHOW_WATERMARK_FOR_GUESTS: false,
             DEFAULT_REMOTE_DISPLAY_NAME: 'Student',
             DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
-            HIDE_INVITE_MORE_HEADER: true
+            HIDE_INVITE_MORE_HEADER: true,
+            // Disable authentication prompts
+            AUTHENTICATION_ENABLE: false,
+            TOOLBAR_ALWAYS_VISIBLE: false
         },
         userInfo: {
-            displayName: currentUser.fullName,
-            email: ''
+            displayName: currentUser.fullName
+            // Removed email field - can trigger authentication
         }
     };
 
