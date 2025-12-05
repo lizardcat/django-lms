@@ -469,9 +469,10 @@ class Command(BaseCommand):
                 Material.objects.create(
                     module=module,
                     title=f'{self._get_material_title(course.code, i, j)}',
-                    content=self._get_material_content(course.code, i, j),
-                    material_type=random.choice(['LECTURE', 'READING', 'VIDEO', 'LAB']),
+                    description=self._get_material_content(course.code, i, j),
+                    material_type=random.choice(['FILE', 'VIDEO', 'LINK', 'DOCUMENT', 'PRESENTATION']),
                     order=j,
+                    uploaded_by=course.instructor,
                 )
 
             # Create 1 assignment per module (homework type)
@@ -509,7 +510,7 @@ class Command(BaseCommand):
             for q in range(1, num_questions + 1):
                 question = Question.objects.create(
                     quiz=quiz,
-                    text=self._get_question_text(course.code, i, q),
+                    question_text=self._get_question_text(course.code, i, q),
                     question_type='MULTIPLE_CHOICE',
                     points=10,
                     order=q,
