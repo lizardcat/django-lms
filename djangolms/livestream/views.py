@@ -12,13 +12,17 @@ from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, Strea
 
 @login_required
 def livestream_list(request):
-    """List all livestreams"""
+    """List all livestreams for user's courses"""
     # Get user's courses
     if request.user.role == 'STUDENT':
-        enrollments = Enrollment.objects.filter(student=request.user, status='ENROLLED')
+        enrollments = Enrollment.objects.filter(
+            student=request.user,
+            status='ENROLLED'
+        ).select_related('course')
         user_courses = [e.course for e in enrollments]
     else:
-        user_courses = Course.objects.filter(instructor=request.user)
+        # Instructors get their teaching courses (including draft courses)
+        user_courses = list(Course.objects.filter(instructor=request.user))
 
     # Get live streams
     live_streams = LiveStream.objects.filter(
@@ -39,10 +43,15 @@ def livestream_list(request):
         status='ENDED'
     ).select_related('course', 'instructor', 'recording').order_by('-actual_end')[:20]
 
+    # Check if user is an instructor
+    is_instructor = request.user.role == 'INSTRUCTOR'
+
     context = {
         'live_streams': live_streams,
         'scheduled_streams': scheduled_streams,
         'past_streams': past_streams,
+        'user_courses': user_courses,
+        'is_instructor': is_instructor,
     }
 
     return render(request, 'livestream/livestream_list.html', context)
@@ -101,13 +110,48 @@ def create_stream(request, course_id):
         return redirect('courses:course_detail', course_id=course.id)
 
     if request.method == 'POST':
-        title = request.POST.get('title')
-        description = request.POST.get('description', '')
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
         scheduled_start = request.POST.get('scheduled_start')
         scheduled_end = request.POST.get('scheduled_end')
         allow_chat = request.POST.get('allow_chat') == 'on'
         allow_qa = request.POST.get('allow_qa') == 'on'
         enable_recording = request.POST.get('enable_recording') == 'on'
+
+        # Validate required fields
+        if not title:
+            messages.error(request, "Title is required.")
+            return redirect('livestream:create_stream', course_id=course.id)
+
+        if len(title) > 200:
+            messages.error(request, "Title is too long (maximum 200 characters).")
+            return redirect('livestream:create_stream', course_id=course.id)
+
+        # Validate dates
+        if not scheduled_start or not scheduled_end:
+            messages.error(request, "Start and end times are required.")
+            return redirect('livestream:create_stream', course_id=course.id)
+
+        try:
+            from datetime import datetime
+            from django.utils.dateparse import parse_datetime
+
+            start_dt = parse_datetime(scheduled_start)
+            end_dt = parse_datetime(scheduled_end)
+
+            if not start_dt or not end_dt:
+                raise ValueError("Invalid date format")
+
+            if end_dt <= start_dt:
+                messages.error(request, "End time must be after start time.")
+                return redirect('livestream:create_stream', course_id=course.id)
+
+            if start_dt < timezone.now():
+                messages.error(request, "Start time cannot be in the past.")
+                return redirect('livestream:create_stream', course_id=course.id)
+        except (ValueError, AttributeError) as e:
+            messages.error(request, "Invalid date format. Please use the datetime picker.")
+            return redirect('livestream:create_stream', course_id=course.id)
 
         stream = LiveStream.objects.create(
             course=course,
@@ -270,9 +314,10 @@ def recording_view(request, recording_id):
         messages.error(request, "You don't have access to this recording.")
         return redirect('livestream:livestream_list')
 
-    # Increment view count
-    recording.view_count += 1
-    recording.save()
+    # Increment view count atomically to prevent race conditions
+    from django.db.models import F
+    StreamRecording.objects.filter(id=recording.id).update(view_count=F('view_count') + 1)
+    recording.refresh_from_db()  # Refresh to get updated value
 
     context = {
         'recording': recording,

@@ -31,9 +31,22 @@ def course_list(request):
 def course_detail(request, course_id):
     """
     Display course details.
+    Instructors can see their own courses regardless of status.
+    Students and anonymous users can only see published courses.
     """
-    course = get_object_or_404(Course, id=course_id, status='PUBLISHED')
+    # Allow instructors to see their own courses regardless of status
+    if request.user.is_authenticated and request.user.is_instructor:
+        course = get_object_or_404(Course, id=course_id)
+        # Check if user is the course instructor
+        if course.instructor != request.user:
+            # Not the instructor, so apply published filter
+            course = get_object_or_404(Course, id=course_id, status='PUBLISHED')
+    else:
+        # Students and anonymous users can only see published courses
+        course = get_object_or_404(Course, id=course_id, status='PUBLISHED')
+
     is_enrolled = False
+    is_instructor = False
 
     if request.user.is_authenticated:
         is_enrolled = Enrollment.objects.filter(
@@ -41,10 +54,26 @@ def course_detail(request, course_id):
             course=course,
             status='ENROLLED'
         ).exists()
+        is_instructor = course.instructor == request.user
+
+    # Get livestreams for this course
+    from djangolms.livestream.models import LiveStream
+    livestreams = LiveStream.objects.filter(course=course).order_by('-scheduled_start')[:5]
+    live_streams = livestreams.filter(status='LIVE')
+    upcoming_streams = livestreams.filter(status='SCHEDULED')
+
+    # Get chat room for this course
+    from djangolms.chat.models import ChatRoom
+    chat_room = ChatRoom.objects.filter(course=course, room_type='COURSE').first()
 
     context = {
         'course': course,
         'is_enrolled': is_enrolled,
+        'is_instructor': is_instructor,
+        'livestreams': livestreams,
+        'live_streams': live_streams,
+        'upcoming_streams': upcoming_streams,
+        'chat_room': chat_room,
     }
     return render(request, 'courses/course_detail.html', context)
 

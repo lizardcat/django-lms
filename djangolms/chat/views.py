@@ -12,21 +12,47 @@ from .models import ChatRoom, Message, MessageReadReceipt, UserPresence, ChatNot
 @login_required
 def chat_home(request):
     """Chat home page showing all available chat rooms"""
-    # Get course chat rooms for enrolled courses
+    # Get user's courses
     if request.user.role == 'STUDENT':
-        enrollments = Enrollment.objects.filter(student=request.user, status='ENROLLED')
-        course_rooms = ChatRoom.objects.filter(
-            course__in=[e.course for e in enrollments],
-            room_type='COURSE',
-            is_active=True
-        )
+        enrollments = Enrollment.objects.filter(
+            student=request.user,
+            status='ENROLLED'
+        ).select_related('course')
+        user_courses = [e.course for e in enrollments]
     else:
-        # Instructors see rooms for their courses
-        course_rooms = ChatRoom.objects.filter(
-            course__instructor=request.user,
-            room_type='COURSE',
-            is_active=True
-        )
+        # Instructors get their teaching courses (published and draft)
+        user_courses = list(Course.objects.filter(instructor=request.user))
+
+    # Auto-create chat rooms for courses that don't have them (optimized)
+    # Get existing course chat rooms
+    existing_rooms = set(
+        ChatRoom.objects.filter(
+            course__in=user_courses,
+            room_type='COURSE'
+        ).values_list('course_id', flat=True)
+    )
+
+    # Create missing rooms in bulk
+    rooms_to_create = []
+    for course in user_courses:
+        if course.id not in existing_rooms:
+            rooms_to_create.append(ChatRoom(
+                course=course,
+                room_type='COURSE',
+                name=f"{course.title} - Chat",
+                created_by=request.user,
+                is_active=True,
+            ))
+
+    if rooms_to_create:
+        ChatRoom.objects.bulk_create(rooms_to_create)
+
+    # Get course chat rooms
+    course_rooms = ChatRoom.objects.filter(
+        course__in=user_courses,
+        room_type='COURSE',
+        is_active=True
+    ).select_related('course')
 
     # Get direct message and group chat rooms
     dm_rooms = ChatRoom.objects.filter(
@@ -35,20 +61,30 @@ def chat_home(request):
         is_active=True
     ).distinct()
 
-    # Get unread message counts
-    unread_counts = {}
-    for room in list(course_rooms) + list(dm_rooms):
-        unread_count = ChatNotification.objects.filter(
-            user=request.user,
-            room=room,
-            is_read=False
-        ).count()
-        unread_counts[room.id] = unread_count
+    # Get unread message counts (optimized to avoid N+1 queries)
+    all_rooms = list(course_rooms) + list(dm_rooms)
+    room_ids = [room.id for room in all_rooms]
+
+    # Single query to get all unread counts
+    unread_data = ChatNotification.objects.filter(
+        user=request.user,
+        room_id__in=room_ids,
+        is_read=False
+    ).values('room_id').annotate(count=Count('id'))
+
+    # Convert to dictionary
+    unread_counts = {item['room_id']: item['count'] for item in unread_data}
+
+    # Fill in zeros for rooms with no unread messages
+    for room_id in room_ids:
+        if room_id not in unread_counts:
+            unread_counts[room_id] = 0
 
     context = {
         'course_rooms': course_rooms,
         'dm_rooms': dm_rooms,
         'unread_counts': unread_counts,
+        'user_courses': user_courses,
     }
 
     return render(request, 'chat/chat_home.html', context)
@@ -204,6 +240,9 @@ def edit_message(request, message_id):
     if not new_content:
         return JsonResponse({'error': 'Content cannot be empty'}, status=400)
 
+    if len(new_content) > 5000:
+        return JsonResponse({'error': 'Message too long (maximum 5000 characters)'}, status=400)
+
     message.content = new_content
     message.is_edited = True
     message.save()
@@ -219,6 +258,24 @@ def edit_message(request, message_id):
 def load_more_messages(request, room_id):
     """Load more messages (pagination)"""
     room = get_object_or_404(ChatRoom, id=room_id)
+
+    # Check access permissions
+    has_access = False
+
+    if room.room_type == 'COURSE':
+        # Check if user is enrolled or is the instructor
+        if request.user.role == 'INSTRUCTOR' and room.course.instructor == request.user:
+            has_access = True
+        elif Enrollment.objects.filter(student=request.user, course=room.course, status='ENROLLED').exists():
+            has_access = True
+    else:
+        # For DM and group chats, check if user is a participant
+        if room.participants.filter(id=request.user.id).exists():
+            has_access = True
+
+    if not has_access:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
     before_id = request.GET.get('before', None)
 
     messages_query = Message.objects.filter(

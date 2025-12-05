@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Stream - {{ stream.title }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h1>🎛 Stream Management</h1>
+        <p class="text-secondary">Control your livestream</p>
+    </div>
+
+    <div class="stream-management-container">
+        <!-- Stream Info Card -->
+        <div class="info-card">
+            <div class="card-header">
+                <h2>📹 {{ stream.title }}</h2>
+                <span class="status-badge status-{{ stream.status|lower }}">
+                    {{ stream.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Course:</span>
+                        <span class="info-value">{{ stream.course.title }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Scheduled Start:</span>
+                        <span class="info-value">{{ stream.scheduled_start|date:"M d, Y g:i A" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Scheduled End:</span>
+                        <span class="info-value">{{ stream.scheduled_end|date:"M d, Y g:i A" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Stream Key:</span>
+                        <code class="stream-key">{{ stream.stream_key }}</code>
+                    </div>
+                </div>
+
+                {% if stream.description %}
+                    <div class="info-description">
+                        <strong>Description:</strong>
+                        <p>{{ stream.description }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Stats Card -->
+        <div class="stats-card">
+            <h3 class="card-title">📊 Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">{{ current_viewers }}</div>
+                    <div class="stat-label">Current Viewers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ stream.peak_viewers }}</div>
+                    <div class="stat-label">Peak Viewers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ stream.total_views }}</div>
+                    <div class="stat-label">Total Views</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ total_questions }}</div>
+                    <div class="stat-label">Questions Asked</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-card">
+            <h3 class="card-title">🎮 Controls</h3>
+            <div class="control-buttons">
+                {% if stream.status == 'SCHEDULED' %}
+                    <button onclick="startStream()" class="btn-success btn-large">
+                        ▶ Start Stream
+                    </button>
+                    <a href="{% url 'livestream:stream_view' stream.id %}" class="btn-secondary btn-large">
+                        👁 Preview
+                    </a>
+                {% elif stream.status == 'LIVE' %}
+                    <button onclick="endStream()" class="btn-danger btn-large">
+                        ⏹ End Stream
+                    </button>
+                    <a href="{% url 'livestream:stream_view' stream.id %}" class="btn-primary btn-large">
+                        👁 View Stream
+                    </a>
+                {% else %}
+                    <a href="{% url 'livestream:stream_view' stream.id %}" class="btn-secondary btn-large">
+                        👁 View Details
+                    </a>
+                    {% if stream.recording %}
+                        <a href="{% url 'livestream:recording_view' stream.recording.id %}" class="btn-secondary btn-large">
+                            📼 View Recording
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="control-options">
+                <div class="option-item">
+                    <span class="option-label">💬 Live Chat:</span>
+                    <span class="option-value">{{ stream.allow_chat|yesno:"Enabled,Disabled" }}</span>
+                </div>
+                <div class="option-item">
+                    <span class="option-label">❓ Q&A:</span>
+                    <span class="option-value">{{ stream.allow_qa|yesno:"Enabled,Disabled" }}</span>
+                </div>
+                <div class="option-item">
+                    <span class="option-label">📹 Recording:</span>
+                    <span class="option-value">{{ stream.enable_recording|yesno:"Enabled,Disabled" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q&A Panel -->
+        {% if unanswered_questions > 0 %}
+            <div class="qa-alert">
+                <strong>⚠️ Attention:</strong> You have {{ unanswered_questions }} unanswered question{{ unanswered_questions|pluralize }}.
+                <a href="{% url 'livestream:stream_view' stream.id %}" class="alert-link">View Q&A →</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.stream-management-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-card, .stats-card, .control-card {
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-scheduled {
+    background: var(--accent-warning);
+    color: var(--text-primary);
+}
+
+.status-live {
+    background: var(--accent-error);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.status-ended {
+    background: var(--text-secondary);
+    color: white;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.stream-key {
+    display: inline-block;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--accent-primary);
+}
+
+.info-description {
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.info-description p {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.btn-large {
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+    min-width: 150px;
+}
+
+.btn-success {
+    background: var(--accent-success);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #2d8e47;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: var(--accent-error);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #d33828;
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--sidebar-hover);
+    border-color: var(--accent-primary);
+}
+
+.control-options {
+    padding: 20px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.option-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.option-item:last-child {
+    border-bottom: none;
+}
+
+.option-label {
+    font-weight: 500;
+}
+
+.option-value {
+    color: var(--text-secondary);
+}
+
+.qa-alert {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alert-link {
+    color: #856404;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.alert-link:hover {
+    text-decoration: underline;
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+</style>
+
+<script>
+function startStream() {
+    if (!confirm('Start the livestream now?')) {
+        return;
+    }
+
+    fetch(`/livestream/stream/{{ stream.id }}/start/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "livestream:stream_view" stream.id %}';
+        } else {
+            alert('Error starting stream: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error starting stream: ' + error);
+    });
+}
+
+function endStream() {
+    if (!confirm('End the livestream now? This will disconnect all viewers.')) {
+        return;
+    }
+
+    fetch(`/livestream/stream/{{ stream.id }}/end/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error ending stream: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error ending stream: ' + error);
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,498 @@
+{% extends 'base.html' %}
+
+{% block title %}Livestreams - USIU LMS{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h1>📹 Livestreams & Video Conferences</h1>
+        <p class="text-secondary">Join live sessions and watch recordings</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Live Now -->
+    {% if live_streams %}
+        <div class="streams-section">
+            <h2 class="section-title">
+                <span class="live-indicator">🔴</span>
+                Live Now
+            </h2>
+            <div class="streams-grid">
+                {% for stream in live_streams %}
+                    <div class="stream-card live-card">
+                        <div class="stream-thumbnail">
+                            <span class="live-badge">LIVE</span>
+                            <div class="stream-preview">
+                                <div class="play-icon">▶</div>
+                            </div>
+                        </div>
+                        <div class="stream-info">
+                            <h3 class="stream-title">{{ stream.title }}</h3>
+                            <p class="stream-course">{{ stream.course.title }}</p>
+                            <div class="stream-meta">
+                                <span class="stream-instructor">
+                                    👤 {{ stream.instructor.get_full_name|default:stream.instructor.username }}
+                                </span>
+                                <span class="stream-viewers">
+                                    👁 {{ stream.current_viewers }} watching
+                                </span>
+                            </div>
+                            <a href="{% url 'livestream:stream_view' stream.id %}" class="btn-primary">
+                                Join Stream
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Scheduled Streams -->
+    {% if scheduled_streams %}
+        <div class="streams-section">
+            <h2 class="section-title">
+                <span class="icon">📅</span>
+                Upcoming Streams
+            </h2>
+            <div class="streams-list">
+                {% for stream in scheduled_streams %}
+                    <div class="stream-item">
+                        <div class="stream-item-icon">📹</div>
+                        <div class="stream-item-content">
+                            <h3 class="stream-item-title">{{ stream.title }}</h3>
+                            <p class="stream-item-course">{{ stream.course.title }}</p>
+                            <div class="stream-item-meta">
+                                <span>👤 {{ stream.instructor.get_full_name|default:stream.instructor.username }}</span>
+                                <span>🕐 {{ stream.scheduled_start|date:"M d, Y g:i A" }}</span>
+                            </div>
+                        </div>
+                        <div class="stream-item-actions">
+                            {% if stream.instructor == request.user %}
+                                <a href="{% url 'livestream:stream_detail' stream.id %}" class="btn-secondary btn-sm">
+                                    Manage
+                                </a>
+                            {% else %}
+                                <span class="status-badge status-scheduled">Scheduled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Past Streams / Recordings -->
+    {% if past_streams %}
+        <div class="streams-section">
+            <h2 class="section-title">
+                <span class="icon">📼</span>
+                Recordings
+            </h2>
+            <div class="streams-grid">
+                {% for stream in past_streams %}
+                    <div class="stream-card">
+                        <div class="stream-thumbnail">
+                            {% if stream.recording %}
+                                <span class="duration-badge">{{ stream.duration_minutes }} min</span>
+                            {% endif %}
+                            <div class="stream-preview recording">
+                                <div class="play-icon">▶</div>
+                            </div>
+                        </div>
+                        <div class="stream-info">
+                            <h3 class="stream-title">{{ stream.title }}</h3>
+                            <p class="stream-course">{{ stream.course.title }}</p>
+                            <div class="stream-meta">
+                                <span>{{ stream.actual_end|date:"M d, Y" }}</span>
+                                <span>{{ stream.total_views }} views</span>
+                            </div>
+                            {% if stream.recording %}
+                                <a href="{% url 'livestream:recording_view' stream.recording.id %}" class="btn-secondary">
+                                    Watch Recording
+                                </a>
+                            {% else %}
+                                <span class="text-secondary">No recording available</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% if not live_streams and not scheduled_streams and not past_streams %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📹</div>
+            <h3>No livestreams available</h3>
+            {% if is_instructor and user_courses %}
+                <p>Create your first livestream for one of your courses!</p>
+                <div style="margin-top: 20px;">
+                    <select id="createStreamCourseSelect" class="course-select" style="max-width: 400px; margin: 0 auto 16px;">
+                        <option value="">Select a course...</option>
+                        {% for course in user_courses %}
+                            <option value="{{ course.id }}">{{ course.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <br>
+                    <button onclick="createStreamForCourse()" class="btn-primary">
+                        Create Livestream
+                    </button>
+                </div>
+            {% elif is_instructor %}
+                <p>Create a course first, then you can schedule livestreams!</p>
+                <a href="{% url 'course_create' %}" class="btn-primary" style="margin-top: 16px;">
+                    Create Course
+                </a>
+            {% else %}
+                <p>Enroll in courses to see livestreams and recordings</p>
+                <a href="{% url 'course_list' %}" class="btn-primary" style="margin-top: 16px;">
+                    Browse Courses
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.streams-section {
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.live-indicator {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.streams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.stream-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.stream-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.live-card {
+    border-color: var(--accent-error);
+}
+
+.stream-thumbnail {
+    position: relative;
+    background: var(--bg-secondary);
+    padding-top: 56.25%; /* 16:9 aspect ratio */
+}
+
+.live-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: var(--accent-error);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+.duration-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+.stream-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-purple));
+}
+
+.stream-preview.recording {
+    background: linear-gradient(135deg, var(--text-secondary), var(--border-color));
+}
+
+.play-icon {
+    font-size: 48px;
+    color: white;
+    opacity: 0.9;
+}
+
+.stream-info {
+    padding: 16px;
+}
+
+.stream-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.stream-course {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.stream-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.stream-instructor {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stream-viewers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.streams-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stream-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.stream-item:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.stream-item-icon {
+    font-size: 32px;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.stream-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.stream-item-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.stream-item-course {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.stream-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.stream-item-actions {
+    flex-shrink: 0;
+}
+
+.btn-primary {
+    display: inline-block;
+    padding: 10px 20px;
+    background: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    display: inline-block;
+    padding: 10px 20px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.btn-secondary:hover {
+    background: var(--sidebar-hover);
+    border-color: var(--accent-primary);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-scheduled {
+    background: var(--accent-warning);
+    color: var(--text-primary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.empty-state h3 {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.course-select {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.course-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+</style>
+
+<script>
+function createStreamForCourse() {
+    const select = document.getElementById('createStreamCourseSelect');
+    const courseId = select.value;
+
+    if (!courseId) {
+        alert('Please select a course first');
+        return;
+    }
+
+    window.location.href = `/livestream/course/${courseId}/create/`;
+}
+</script>
+{% endblock %}
