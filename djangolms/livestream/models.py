@@ -37,6 +37,16 @@ class LiveStream(models.Model):
     allow_qa = models.BooleanField(default=True)
     max_viewers = models.IntegerField(default=1000, help_text="Maximum concurrent viewers")
 
+    # Jitsi Video Conference Integration
+    video_conference = models.OneToOneField(
+        'VideoConference',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='livestream',
+        help_text="Associated Jitsi video conference for actual streaming"
+    )
+
     # Stats
     current_viewers = models.IntegerField(default=0)
     peak_viewers = models.IntegerField(default=0)
@@ -72,6 +82,20 @@ class LiveStream(models.Model):
             delta = self.actual_end - self.actual_start
             return int(delta.total_seconds() / 60)
         return 0
+
+    @property
+    def jitsi_url(self):
+        """Get Jitsi Meet URL for this livestream"""
+        if self.video_conference:
+            return self.video_conference.jitsi_url
+        return None
+
+    @property
+    def jitsi_room_name(self):
+        """Get Jitsi room name for this livestream"""
+        if self.video_conference:
+            return self.video_conference.room_name
+        return None
 
 
 class StreamViewer(models.Model):
