@@ -58,9 +58,10 @@ def course_detail(request, course_id):
 
     # Get livestreams for this course
     from djangolms.livestream.models import LiveStream
-    livestreams = LiveStream.objects.filter(course=course).order_by('-scheduled_start')[:5]
-    live_streams = livestreams.filter(status='LIVE')
-    upcoming_streams = livestreams.filter(status='SCHEDULED')
+    livestreams_base = LiveStream.objects.filter(course=course).order_by('-scheduled_start')
+    live_streams = livestreams_base.filter(status='LIVE')[:5]
+    upcoming_streams = livestreams_base.filter(status='SCHEDULED')[:5]
+    livestreams = livestreams_base[:5]  # All recent streams for display
 
     # Get chat room for this course
     from djangolms.chat.models import ChatRoom
