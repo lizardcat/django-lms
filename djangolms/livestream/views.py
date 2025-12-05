@@ -133,7 +133,6 @@ def create_stream(request, course_id):
             return redirect('livestream:create_stream', course_id=course.id)
 
         try:
-            from datetime import datetime
             from django.utils.dateparse import parse_datetime
 
             start_dt = parse_datetime(scheduled_start)
@@ -141,6 +140,12 @@ def create_stream(request, course_id):
 
             if not start_dt or not end_dt:
                 raise ValueError("Invalid date format")
+
+            # Make datetimes timezone-aware if they're naive
+            if timezone.is_naive(start_dt):
+                start_dt = timezone.make_aware(start_dt)
+            if timezone.is_naive(end_dt):
+                end_dt = timezone.make_aware(end_dt)
 
             if end_dt <= start_dt:
                 messages.error(request, "End time must be after start time.")
