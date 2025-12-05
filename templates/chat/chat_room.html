@@ -29,7 +29,7 @@
         </div>
         <div class="chat-header-right">
             {% if room.course %}
-                <a href="{% url 'courses:course_detail' room.course.id %}" class="btn-secondary btn-sm">
+                <a href="{% url 'course_detail' room.course.id %}" class="btn-secondary btn-sm">
                     View Course
                 </a>
             {% endif %}
