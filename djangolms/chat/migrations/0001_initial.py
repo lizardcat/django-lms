@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='presence', to=settings.AUTH_USER_MODEL)),
             ],
             options={
-                'unique_together': [('user', 'room')],
+                'unique_together': {('user', 'room')},
             },
         ),
         migrations.CreateModel(

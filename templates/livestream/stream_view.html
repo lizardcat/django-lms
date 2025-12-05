@@ -786,7 +786,7 @@
 }
 </style>
 
-<script src="https://meet.jit.si/external_api.js"></script>
+<script src="{{ jitsi_external_api_url }}"></script>
 <script>
 const streamId = {{ stream.id }};
 const streamKey = '{{ stream.stream_key }}';
@@ -808,7 +808,7 @@ if (isLive && jitsiRoomName) {
 }
 
 function initializeJitsi() {
-    const domain = 'meet.jit.si';
+    const domain = '{{ jitsi_domain }}';
     const options = {
         roomName: jitsiRoomName || `USIULMSStream${streamId}${streamKey.slice(0, 8)}`,
         width: '100%',

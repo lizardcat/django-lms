@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Q
+from django.conf import settings
 
 from djangolms.courses.models import Course, Enrollment
 from .models import LiveStream, StreamViewer, StreamRecording, QAQuestion, StreamChat, VideoConference
@@ -94,6 +95,8 @@ def stream_view(request, stream_id):
         'qa_questions': qa_questions,
         'chat_messages': chat_messages,
         'is_instructor': request.user == stream.instructor,
+        'jitsi_domain': settings.JITSI_DOMAIN,
+        'jitsi_external_api_url': settings.JITSI_EXTERNAL_API_URL,
     }
 
     return render(request, 'livestream/stream_view.html', context)
