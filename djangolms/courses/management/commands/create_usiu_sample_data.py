@@ -521,7 +521,7 @@ class Command(BaseCommand):
                 for choice_idx, (choice_text, is_correct) in enumerate(choices_data):
                     QuestionChoice.objects.create(
                         question=question,
-                        text=choice_text,
+                        choice_text=choice_text,
                         is_correct=is_correct,
                         order=choice_idx + 1,
                     )
