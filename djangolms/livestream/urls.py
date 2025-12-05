@@ -10,6 +10,7 @@ urlpatterns = [
     path('course/<int:course_id>/create/', views.create_stream, name='create_stream'),
     path('stream/<int:stream_id>/start/', views.start_stream, name='start_stream'),
     path('stream/<int:stream_id>/end/', views.end_stream, name='end_stream'),
+    path('stream/<int:stream_id>/upload-recording/', views.upload_recording, name='upload_recording'),
     path('question/<int:question_id>/answer/', views.answer_question, name='answer_question'),
     path('question/<int:question_id>/pin/', views.pin_question, name='pin_question'),
     path('recording/<int:recording_id>/', views.recording_view, name='recording_view'),

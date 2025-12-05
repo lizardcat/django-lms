@@ -17,6 +17,7 @@
                     ></iframe>
                 {% elif recording.video_file %}
                     <video controls class="video-element">
+                        <source src="{{ recording.video_file.url }}" type="video/webm">
                         <source src="{{ recording.video_file.url }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>

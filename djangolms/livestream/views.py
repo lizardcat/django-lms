@@ -314,6 +314,56 @@ def pin_question(request, question_id):
     return JsonResponse({'success': True, 'is_pinned': question.is_pinned})
 
 
+@require_POST
+@login_required
+def upload_recording(request, stream_id):
+    """Upload a recording for a livestream"""
+    stream = get_object_or_404(LiveStream, id=stream_id)
+
+    # Only instructor can upload recordings
+    if stream.instructor != request.user:
+        return JsonResponse({'error': 'Not authorized'}, status=403)
+
+    if 'recording' not in request.FILES:
+        return JsonResponse({'error': 'No recording file provided'}, status=400)
+
+    recording_file = request.FILES['recording']
+
+    # Validate file type (should be video)
+    allowed_types = ['video/webm', 'video/mp4', 'video/x-matroska']
+    if recording_file.content_type not in allowed_types:
+        return JsonResponse({'error': 'Invalid file type. Must be video.'}, status=400)
+
+    # Calculate file size in MB
+    file_size_mb = recording_file.size / (1024 * 1024)
+
+    # Create or update recording
+    recording, created = StreamRecording.objects.get_or_create(
+        stream=stream,
+        defaults={
+            'title': stream.title,
+            'description': stream.description,
+            'video_file': recording_file,
+            'file_size_mb': round(file_size_mb, 2),
+            'is_public': False,
+            'processed_at': timezone.now()
+        }
+    )
+
+    if not created:
+        # Update existing recording
+        recording.video_file = recording_file
+        recording.file_size_mb = round(file_size_mb, 2)
+        recording.processed_at = timezone.now()
+        recording.save()
+
+    return JsonResponse({
+        'success': True,
+        'recording_id': recording.id,
+        'message': 'Recording uploaded successfully'
+    })
+
+
 @login_required
 def recording_view(request, recording_id):
     """View a recorded livestream"""
